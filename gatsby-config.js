@@ -58,8 +58,8 @@ module.exports = {
         icon: `twitch`,
       },
       {
-        name: `Youtube`,
-        url: `https://youtube.com/Stephanvs`,
+        name: `YouTube`,
+        url: `https://youtube.com/channel/UCp7S7EdwOQ0rJmkjjm07VtQ`,
         icon: `youtube`,
       },
     ],
