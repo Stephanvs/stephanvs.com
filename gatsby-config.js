@@ -44,7 +44,7 @@ module.exports = {
       },
       {
         name: `Instagram`,
-        url: `https://instagram.com/Stephanvs`,
+        url: `https://instagram.com/stephanvs`,
         icon: `instagram`,
       },
       {
