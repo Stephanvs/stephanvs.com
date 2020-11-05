@@ -93,5 +93,17 @@ module.exports = {
       },
     },
     `@arshad/gatsby-theme-phoenix`,
+    {
+      resolve: `gatsby-plugin-postcss`,
+      options: {
+        postCssPlugins: [
+          require("tailwindcss")(
+            require("./src/@arshad/gatsby-theme-phoenix/tailwind.config")
+          ),
+          require("autoprefixer"),
+          require("postcss-color-function"),
+        ],
+      },
+    },
   ],
 };
