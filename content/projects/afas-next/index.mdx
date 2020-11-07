@@ -1,0 +1,51 @@
+---
+title: AFAS Next
+excerpt: How to Scale Software Development 
+url: https://example.com
+image: image.jpg
+---
+
+How to scale software development? Depending on who you ask you'll get different answers. 
+                A modern project manager might say self-organizing teams are key, while an architect might tell you that a system with 
+                clean separations enables software development to scale. If you ask the same question to a programmer one might say that clean code is key. 
+                Another might say that keeping technical debt at a minimum keeps productivity high. Although these answers might seem different, they all 
+                share the same underlying principle: independence. Independence helps to reduce the impact of change, something that is constant in the 
+                world of software development. In this post, we want to share how we reorganized our code, architecture, and teams to increase the level 
+                of independence and improved software development productivity.
+                
+# Code &amp; Architecture
+Our vision is to transform a model representing the business model into an executable software solution. We already went through iterations 
+                of major change mainly focussing on lowering the dependency between model and generator. This by adding abstractions to decouple the model 
+                from the underlying architecture. For instance by creating sub-models for so-called horizontal concerns, like an aggregate root model, query, 
+                command model, projector model and UI model. This allowed us to change the domain side independently of the query and UI layers of the software 
+                which was already a major improvement.
+                
+Over time we noticed these models didn't change frequently anymore and were implemented at the right abstraction levels. 
+                The only large changes that remained were merely functional ones. Technical components could evolve independently. Functional changes 
+                however still affected non-trivial, cross-cutting changes affecting large pieces of code.
+
+To overcome this we introduced a modular architecture where we separated our solution into functional components that are fully self-contained. Meaning they own their own backend, business logic, and frontend. We did this by introducing composition at the edges of our architecture. Introducing composite UI and composite storage based on definitions.
+
+# Anatomy of a Module
+The basic principle of a module is its independence. A module contributes to the final solution by injecting bundles. 
+                Bundles contain the definitions for data storage, domain model, and user interface. With these definitions, they can compose 
+                themselves on the user interface, where they can generate their own commands that will be handled by the module's backend.
+                
+Although we strive for independence, we also know that we can never find a clear separation where all modules are truly independent. 
+                There will always be some situations where modules need to collaborate. Currently, the lowest coupling known to man is coupling via events. 
+                Events are facts that a represented by immutable messages. These messages are shared between modules allowing them to react to change.
+
+# Team Arrangement
+Adjacent to the architectural and technical change we changed our entire team layout. 
+                Previously we formed teams around modeling, functional design, backend, implementation and frontend specializations. 
+                Now each team consists of professionals in all these disciplines. Focussing on the functional domain rather than technical. 
+                Improved communication between all involved parties during projects, greater understanding, improved delivery speed, 
+                sense of ownership and quality improvement are all results of this change. Teams say they have a better understanding of the 
+                challenges and the solutions that exist. They enjoy working closely together and feel responsible for their modules. 
+                They are in complete control of the module's internals, allowing them to find the best solution within the boundaries of the contract.
+
+# Future Focus
+We value this new approach in modularizing our development. We want to extend this model to other areas such as the deployment and migration model. 
+                To allow teams to deploy their modules and bundles on an individual basis.
+                
+But we also see technical value in the modules: it allows us to think about and partial generation, conversion, and other versioning challenges.
