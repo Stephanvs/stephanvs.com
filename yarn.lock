@@ -9,14 +9,6 @@
   dependencies:
     tslib "~2.0.1"
 
-"@arshad/gatsby-source-podcast@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@arshad/gatsby-source-podcast/-/gatsby-source-podcast-1.0.2.tgz#213df436950081ea871c78646307b6a53ab7254e"
-  integrity sha512-iTKuJBFRpEO6i2KMy2u91phPgBWYEXQzQvapiMYEVJMaSYHVy6a79VmiQMxjUVXtbM3SXwpdylQ+YrYsKiDvVw==
-  dependencies:
-    lodash "^4.17.11"
-    rss-parser "^3.6.2"
-
 "@arshad/gatsby-theme-blog-core@^1.2.1":
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@arshad/gatsby-theme-blog-core/-/gatsby-theme-blog-core-1.2.1.tgz#33bfb97284417b440814c5c17e0af6b739b8d0ec"
@@ -99,17 +91,6 @@
     gatsby-source-filesystem "^2.1.36"
     gatsby-transformer-remark "^2.6.34"
     gatsby-transformer-sharp "^2.3.3"
-
-"@arshad/gatsby-theme-podcast-core@^1.1.6":
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/@arshad/gatsby-theme-podcast-core/-/gatsby-theme-podcast-core-1.1.6.tgz#d519d1f32f5d537613591aa5963f996f05d86647"
-  integrity sha512-vlA7KNC8/hdWpEVkmwEuG27v5W38g+pbr+EZm7/Jvgd7Wd4c5XvktO75qPZUQoFWsjmFpOFjjIoS3WN7sAgShg==
-  dependencies:
-    "@arshad/gatsby-source-podcast" "^1.0.2"
-    "@arshad/gatsby-theme-core" "^1.1.6"
-    gatsby-awesome-pagination "^0.3.5"
-    gatsby-source-filesystem "^2.1.39"
-    is-relative-url "^3.0.0"
 
 "@arshad/gatsby-theme-portfolio-core@^1.1.6":
   version "1.1.6"
@@ -5304,7 +5285,7 @@ entities@^1.1.1, entities@~1.1.1:
   resolved "https://registry.yarnpkg.com/entities/-/entities-1.1.2.tgz#bdfa735299664dfafd34529ed4f8522a275fea56"
   integrity sha512-f2LZMYl1Fzu7YSBKg+RoROelpOaNrcGmE9AZubeDfrCEia483oW4MI4VyFd5VNHIgQ/7qm1I0wUHK1eJnn2y2w==
 
-entities@^2.0.0, entities@^2.0.3:
+entities@^2.0.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/entities/-/entities-2.1.0.tgz#992d3129cf7df6870b96c57858c249a120f8b8b5"
   integrity sha512-hCx1oky9PFrJ611mf0ifBLBRW8lUUVRlFolb5gWRfIELabBlbp9xZvrqZLZAs+NxFnbfQoeGd8wDkygjg7U85w==
@@ -12726,14 +12707,6 @@ ripemd160@^2.0.0, ripemd160@^2.0.1:
     hash-base "^3.0.0"
     inherits "^2.0.1"
 
-rss-parser@^3.6.2:
-  version "3.9.0"
-  resolved "https://registry.yarnpkg.com/rss-parser/-/rss-parser-3.9.0.tgz#469a1201619d155e902b073c4f495c589943085a"
-  integrity sha512-wlRSfGrotOXuWo19Dtl2KmQt7o9i5zzCExUrxpechE0O54BAx7JD+xhWyGumPPqiJj771ndflV3sE3bTHen0HQ==
-  dependencies:
-    entities "^2.0.3"
-    xml2js "^0.4.19"
-
 rss@^1.2.2:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/rss/-/rss-1.2.2.tgz#50a1698876138133a74f9a05d2bdc8db8d27a921"
@@ -15338,7 +15311,7 @@ xml-parse-from-string@^1.0.0:
   resolved "https://registry.yarnpkg.com/xml-parse-from-string/-/xml-parse-from-string-1.0.1.tgz#a9029e929d3dbcded169f3c6e28238d95a5d5a28"
   integrity sha1-qQKekp09vN7RafPG4oI42VpdWig=
 
-xml2js@^0.4.19, xml2js@^0.4.5:
+xml2js@^0.4.5:
   version "0.4.23"
   resolved "https://registry.yarnpkg.com/xml2js/-/xml2js-0.4.23.tgz#a0c69516752421eb2ac758ee4d4ccf58843eac66"
   integrity sha512-ySPiMjM0+pLDftHgXY4By0uswI3SPKLDw/i3UXbnO8M/p28zqexCUoPmQFrYD+/1BzhGJSs2i1ERWKJAtiLrug==
