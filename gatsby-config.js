@@ -19,8 +19,8 @@ module.exports = {
         link: `/blog`,
       },
       {
-        name: `Portfolio`,
-        link: `/portfolio`,
+        name: `Projects`,
+        link: `/projects`,
       },
       {
         name: `Photography`,
@@ -65,7 +65,16 @@ module.exports = {
     // To disable a theme, remove it here and run `yarn remove @arshad/gatsby-theme-NAME`.
     `@arshad/gatsby-theme-blog-core`,
     `@arshad/gatsby-theme-page-core`,
-    `@arshad/gatsby-theme-portfolio-core`,
+    // `@arshad/gatsby-theme-portfolio-core`,
+    {
+      resolve: `@arshad/gatsby-theme-portfolio-core`,
+      options: {
+        contentPath: `content/projects`,
+        basePath: `/projects`,
+        pageTitle: `Projects`,
+        pageExcerpt: null,
+      },
+    },
     `@arshad/gatsby-theme-photo-core`,
     `@arshad/gatsby-theme-phoenix`,
     {
