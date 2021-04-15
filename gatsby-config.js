@@ -19,12 +19,8 @@ module.exports = {
         link: `/blog`,
       },
       {
-        name: `Podcast`,
-        link: `/podcast`,
-      },
-      {
-        name: `Portfolio`,
-        link: `/portfolio`,
+        name: `Projects`,
+        link: `/projects`,
       },
       {
         name: `Photography`,
@@ -69,29 +65,17 @@ module.exports = {
     // To disable a theme, remove it here and run `yarn remove @arshad/gatsby-theme-NAME`.
     `@arshad/gatsby-theme-blog-core`,
     `@arshad/gatsby-theme-page-core`,
-    `@arshad/gatsby-theme-portfolio-core`,
-    `@arshad/gatsby-theme-photo-core`,
+    // `@arshad/gatsby-theme-portfolio-core`,
     {
-      resolve: `@arshad/gatsby-theme-podcast-core`,
+      resolve: `@arshad/gatsby-theme-portfolio-core`,
       options: {
-        feedUrl: `https://feeds.megaphone.fm/travelgenius`,
-        podcast: {
-          name: `Travel Genuis`,
-          description: `Eligendi nisi nobis nisi voluptate. Corporis deserunt provident hic numquam. Veritatis vero necessitatibus adipisci cumque voluptate rerum at.`,
-          image: `assets/images/podcast.jpg`,
-          social: [
-            {
-              name: `Apple Podcast`,
-              url: `https://itunes.apple.com`,
-            },
-            {
-              name: `Google Podcast`,
-              url: `https://podcasts.google.com`,
-            },
-          ],
-        },
+        contentPath: `content/projects`,
+        basePath: `/projects`,
+        pageTitle: `Projects`,
+        pageExcerpt: null,
       },
     },
+    `@arshad/gatsby-theme-photo-core`,
     `@arshad/gatsby-theme-phoenix`,
     {
       resolve: `gatsby-plugin-postcss`,
