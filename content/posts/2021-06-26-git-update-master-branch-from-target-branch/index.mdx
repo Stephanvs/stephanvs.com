@@ -1,0 +1,48 @@
+---
+title: Quickly pull on a different branch using git
+date: 2021-06-26
+excerpt: Finding the easiest way to pull updates from main into feature branch
+description: The quest seemed easy, find the easiest way to update changes from the main branch into the current development branch. This post provides the answer.
+tags: ["git", "cli"]
+image: ./git.webp
+---
+
+It's something I've always taken for granted. When updating the main branch when working from a feature branch, I had to issue the following commands:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -
+git merge main
+```
+
+It becomes even worse when having local changes that you're not ready to commit just yet. In which case the commands are:
+
+```bash
+git stash
+git checkout main
+git pull
+git checkout -
+git merge main
+git stash pop
+```
+
+I usually work in Visual Studio and when doing this; on each step the IDE has to reload the solution and all projects within, and because the code between the branches will most likely change, it also has to parse all the codefiles. Needless to say this is cumbersome and slow.
+
+## The answer
+
+Until at one time I started looking for an alternative to this problem. I came across this stackoverflow question, but the answer was not really obvious from the replies. So here is the thing I was looking for _exactly_.
+
+```bash
+git pull origin main:main
+```
+
+Additionally if you also want to merge the latest changes into the branch you're working on do the following;
+
+```bash
+git merge main
+```
+
+Today I learned something new!
+
+HTH, Svs
