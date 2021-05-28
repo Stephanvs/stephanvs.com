@@ -22,10 +22,6 @@ module.exports = {
         name: `Projects`,
         link: `/projects`,
       },
-      {
-        name: `Photography`,
-        link: `/photography`,
-      },
     ],
     socialLinks: [
       {
@@ -75,7 +71,7 @@ module.exports = {
         pageExcerpt: null,
       },
     },
-    `@arshad/gatsby-theme-photo-core`,
+    // `@arshad/gatsby-theme-photo-core`,
     `@arshad/gatsby-theme-phoenix`,
     {
       resolve: `gatsby-plugin-postcss`,
