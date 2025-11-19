@@ -1,45 +1,38 @@
-<div align="center">
-<h1>@arshad/gatsby-starter-phoenix</h1>
-</div>
+# Stephanvs.com
 
-<p align="center">
-  <a href="https://arshad-gatsby-example-phoenix.netlify.com"><img src="https://img.shields.io/badge/demo-netlify-success" alt="Demo"></a>
-<a href="https://github.com/arshad/gatsby-themes/tree/master/themes/gatsby-theme-phoenix"><img src="https://img.shields.io/badge/%40arshad%2Fgatsby--themes-phoenix-blueviolet" alt="Theme"></a>
-</p>
+A minimal, modern personal website built with Bun and TypeScript.
 
-<p align="center">
-A Gatsby starter to kick off a site using the <a href="https://github.com/arshad/gatsby-themes/tree/master/themes/gatsby-theme-phoenix">@arshad/gatsby-theme-phoenix</a> theme.
-</p>
+## Tech Stack
 
-<p align="center">
-  <img src="https://arshad.io/uploads/gatsby-theme-phoenix-screenshot.jpg" alt="Phoenix preview" />
-</p>
+- **Runtime**: [Bun](https://bun.sh)
+- **Language**: TypeScript
+- **Architecture**: Static Site Generator (SSG)
+- **Styling**: Minimal CSS (Dark Mode / Techy)
 
-<h3 align="center"><code>gatsby new site arshad/gatsby-starter-phoenix</code></h3>
+## Development
 
-## Installation
+To start the development server:
 
-### Step 1: Run the following command to create a new site
-
-```shell
-gatsby new my-site arshad/gatsby-starter-phoenix
+```bash
+bun run dev
 ```
 
-### Step 2: Configure `.env`
+This will build the site and serve it at `http://localhost:3000` (or whatever port `bun x serve` picks).
 
-Copy `.env.example` to `.env` and update `SITE_URL`.
+## Build
 
-### Step 3: Start developing
+To build the static site:
 
-```shell
-cd my-site/
-gatsby develop
+```bash
+bun run build
 ```
 
-## Customization
+The output will be in the `public/` directory.
 
-Check out the docs for [@arshad/gatsby-theme-phoenix](https://github.com/arshad/gatsby-themes/tree/master/themes/gatsby-theme-phoenix).
+## Content
 
-## Support
+Content is located in the `content/` directory. It supports MDX/Markdown with frontmatter.
 
-Create an issue on the main repo [@arshad/gatsby-themes](https://github.com/arshad/gatsby-themes/issues).
+- `content/posts/`: Blog posts
+- `content/work/`: Work pages
+- `content/pages/`: Static pages (Home, 404)
