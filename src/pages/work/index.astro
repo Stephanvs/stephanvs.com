@@ -1,0 +1,25 @@
+---
+import { getCollection } from 'astro:content';
+import Card from '../../components/Card.astro';
+import Layout from '../../layouts/Layout.astro';
+import { contentSlug } from '../../lib/content';
+
+const works = await getCollection('work');
+---
+
+<Layout title="Work" description="Selected software architecture and engineering work.">
+  <section class="article">
+    <h1>Work</h1>
+    <div class="grid">
+      {works.map((item) => (
+        <Card
+          href={`/work/${contentSlug(item.id)}/`}
+          image={item.data.image}
+          meta="Case study"
+          title={item.data.title}
+          excerpt={item.data.excerpt}
+        />
+      ))}
+    </div>
+  </section>
+</Layout>

@@ -1,0 +1,70 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { contentSlug, formatDate } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts');
+  return posts.map((post) => ({
+    params: { slug: contentSlug(post.id) },
+    props: { post }
+  }));
+}
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+const tableOfContents = headings.filter(({ depth }) => depth === 2 || depth === 3);
+---
+
+<Layout title={post.data.title} description={post.data.description ?? post.data.excerpt}>
+  <div class="article-layout">
+    {tableOfContents.length > 0 && (
+      <nav class="toc" aria-label="On this page">
+        <p class="toc-title">On this page</p>
+        <ol>
+          {tableOfContents.map((heading) => (
+            <li class={`toc-level-${heading.depth}`}>
+              <a href={`#${heading.slug}`} data-toc-link={heading.slug}>{heading.text}</a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )}
+    <article class="article">
+      <h1>{post.data.title}</h1>
+      <span class="post-meta">
+        {formatDate(post.data.date)}
+        {post.data.tags?.length ? ` · ${post.data.tags.join(', ')}` : ''}
+      </span>
+      <Content />
+    </article>
+    <div class="article-spacer" aria-hidden="true"></div>
+  </div>
+</Layout>
+
+<script>
+  const tocLinks = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')];
+  const sections = tocLinks
+    .map((link) => document.getElementById(link.dataset.tocLink ?? ''))
+    .filter((section): section is HTMLElement => section !== null);
+
+  if (sections.length > 0) {
+    const setActiveSection = (id: string) => {
+      tocLinks.forEach((link) => link.classList.toggle('active', link.dataset.tocLink === id));
+    };
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible[0]) setActiveSection(visible[0].target.id);
+    }, { rootMargin: '-10% 0px -75% 0px' });
+
+    sections.forEach((section) => observer.observe(section));
+    setActiveSection(sections[0].id);
+  }
+</script>

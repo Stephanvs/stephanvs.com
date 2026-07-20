@@ -1,22 +1,44 @@
 ---
+import '../styles/global.css';
+
 interface Props {
 	title?: string;
+	description?: string;
 }
 
-const { title } = Astro.props;
+const {
+	title = 'Home',
+	description = 'Independent software architect & developer'
+} = Astro.props;
+const path = Astro.url.pathname;
+const pageTitle = `${title} | Stephan van Stekelenburg`;
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
-		<meta charSet="UTF-8" />
-		<meta name="description" content="Astro description" />
-		<meta name="viewport" content="width=device-width" />
+		<meta charset="UTF-8" />
+		<meta name="description" content={description} />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{title ?? 'Stephanvs.com'}</title>
+		<title>{pageTitle}</title>
 	</head>
 	<body>
-		<slot />
+		<header class="site-header">
+			<a href="/" class="logo"><span class="logo-mark">S/</span> Stephan van Stekelenburg</a>
+			<nav aria-label="Main navigation">
+				<ul>
+					<li><a href="/" class:list={{ active: path === '/' }}>Home</a></li>
+					<li><a href="/blog" class:list={{ active: path.startsWith('/blog') }}>Blog</a></li>
+					<li><a href="/work" class:list={{ active: path.startsWith('/work') }}>Work</a></li>
+				</ul>
+			</nav>
+		</header>
+		<main><slot /></main>
+		<footer class="site-footer">
+			<span>&copy; {new Date().getFullYear()} Stephan van Stekelenburg</span>
+			<span>Software architecture / distributed systems / engineering</span>
+		</footer>
 	</body>
 </html>

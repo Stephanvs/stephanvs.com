@@ -1,0 +1,28 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { contentSlug } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const works = await getCollection('work');
+  return works.map((item) => ({
+    params: { slug: contentSlug(item.id) },
+    props: { item }
+  }));
+}
+
+interface Props {
+  item: CollectionEntry<'work'>;
+}
+
+const { item } = Astro.props;
+const { Content } = await render(item);
+---
+
+<Layout title={item.data.title} description={item.data.excerpt}>
+  <article class="article">
+    <h1>{item.data.title}</h1>
+    <Content />
+  </article>
+</Layout>

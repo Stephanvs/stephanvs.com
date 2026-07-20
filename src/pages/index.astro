@@ -1,7 +1,69 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import { Image } from 'astro:assets';
+import { getCollection, render } from 'astro:content';
+import Card from '../components/Card.astro';
+import SectionHead from '../components/SectionHead.astro';
+import Layout from '../layouts/Layout.astro';
+import { contentSlug, formatDate } from '../lib/content';
+import avatar from '../../content/pages/home/stephanvs.png';
+
+const pages = await getCollection('pages');
+const home = pages.find((page) => contentSlug(page.id) === 'home');
+
+if (!home) throw new Error('Home content was not found');
+
+const { Content } = await render(home);
+const posts = (await getCollection('posts'))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 3);
+const works = (await getCollection('work')).slice(0, 2);
 ---
 
-<Layout>
-  <main class="text-blue-500">Hello World</main>
+<Layout title="Home" description={home.data.excerpt}>
+  <section class="hero">
+    <div>
+      <p class="hero-kicker">Independent software architect · Netherlands</p>
+      <h1>{home.data.title}</h1>
+      <p class="hero-summary">{home.data.excerpt}</p>
+      <div class="actions">
+        <a class="button button-primary" href="/work">View selected work</a>
+        <a class="button" href="mailto:stephan@hayman.io">Start a conversation</a>
+      </div>
+    </div>
+    <aside class="hero-aside">
+      <Image src={avatar} alt="Portrait of Stephan van Stekelenburg" class="avatar-img" />
+      <p>Architecture should make change less expensive, not merely make diagrams more impressive.</p>
+    </aside>
+  </section>
+
+  <section class="intro">
+    <p class="section-kicker">Approach / 01</p>
+    <div class="intro-copy"><Content /></div>
+  </section>
+
+  <SectionHead kicker="Writing / 02" title="Ideas in practice" href="/blog" linkText="All writing" />
+  <div class="grid">
+    {posts.map((post) => (
+      <Card
+        href={`/blog/${contentSlug(post.id)}/`}
+        image={post.data.image}
+        meta={formatDate(post.data.date)}
+        title={post.data.title}
+        excerpt={post.data.excerpt}
+      />
+    ))}
+  </div>
+
+  <SectionHead kicker="Selected work / 03" title="Systems at scale" href="/work" linkText="All work" />
+  <div class="grid">
+    {works.map((item) => (
+      <Card
+        href={`/work/${contentSlug(item.id)}/`}
+        image={item.data.image}
+        meta="Case study"
+        title={item.data.title}
+        excerpt={item.data.excerpt}
+      />
+    ))}
+  </div>
 </Layout>

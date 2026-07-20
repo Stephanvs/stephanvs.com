@@ -1,0 +1,19 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import { contentSlug } from '../lib/content';
+
+const pages = await getCollection('pages');
+const notFound = pages.find((page) => contentSlug(page.id) === '404');
+
+if (!notFound) throw new Error('404 content was not found');
+
+const { Content } = await render(notFound);
+---
+
+<Layout title={notFound.data.title}>
+  <article class="article">
+    <h1>{notFound.data.title}</h1>
+    <Content />
+  </article>
+</Layout>
