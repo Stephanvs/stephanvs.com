@@ -1,0 +1,26 @@
+---
+import { getCollection } from 'astro:content';
+import Card from '../../components/Card.astro';
+import Layout from '../../layouts/Layout.astro';
+import { contentSlug, formatDate } from '../../lib/content';
+
+const posts = (await getCollection('posts'))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+
+<Layout title="Blog" description="Writing about software architecture, engineering, and tools.">
+  <section class="py-16 md:py-20">
+    <h1 class="mb-10 font-serif text-6xl leading-none tracking-tighter md:text-8xl">Blog</h1>
+    <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
+      {posts.map((post) => (
+        <Card
+          href={`/blog/${contentSlug(post.id)}/`}
+          image={post.data.image}
+          meta={formatDate(post.data.date)}
+          title={post.data.title}
+          excerpt={post.data.excerpt}
+        />
+      ))}
+    </div>
+  </section>
+</Layout>

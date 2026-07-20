@@ -1,0 +1,30 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { contentSlug } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const works = await getCollection('work');
+  return works.map((item) => ({
+    params: { slug: contentSlug(item.id) },
+    props: { item }
+  }));
+}
+
+interface Props {
+  item: CollectionEntry<'work'>;
+}
+
+const { item } = Astro.props;
+const { Content } = await render(item);
+---
+
+<Layout title={item.data.title} description={item.data.excerpt}>
+  <article class="mx-auto max-w-3xl py-16 md:py-20">
+    <h1 class="mb-10 font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl">{item.data.title}</h1>
+    <div class="prose prose-stone max-w-none md:prose-lg prose-headings:font-serif prose-headings:tracking-tight prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700 prose-blockquote:border-orange-700 prose-code:bg-stone-200 prose-code:px-1 prose-code:py-0.5 prose-code:before:content-none prose-code:after:content-none">
+      <Content />
+    </div>
+  </article>
+</Layout>

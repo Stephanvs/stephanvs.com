@@ -1,0 +1,96 @@
+---
+import { Image } from "astro:assets";
+import { getCollection, render } from "astro:content";
+import Card from "../components/Card.astro";
+import SectionHead from "../components/SectionHead.astro";
+import Layout from "../layouts/Layout.astro";
+import { contentSlug, formatDate } from "../lib/content";
+import avatar from "../../content/pages/home/stephanvs.png";
+
+const pages = await getCollection("pages");
+const home = pages.find((page) => contentSlug(page.id) === "home");
+
+if (!home) throw new Error("Home content was not found");
+
+const { Content } = await render(home);
+const posts = (await getCollection("posts"))
+    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+    .slice(0, 3);
+const works = (await getCollection("work")).slice(0, 2);
+---
+
+<Layout title="Home" description={home.data.excerpt}>
+    <section class="grid gap-12 border-b border-stone-900 py-16 md:py-24 lg:grid-cols-4 lg:items-end lg:gap-16 lg:py-32">
+        <div class="lg:col-span-3">
+            <p class="font-mono text-xs uppercase tracking-widest text-orange-700">
+                Independent software architect &rarr; Netherlands
+            </p>
+            <h1 class="mt-5 max-w-5xl font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">{home.data.title}</h1>
+            <p class="mt-7 max-w-3xl text-xl leading-relaxed text-stone-700 md:text-2xl">{home.data.excerpt}</p>
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a class="inline-flex justify-center border border-stone-900 bg-stone-900 px-4 py-3 font-mono text-xs uppercase tracking-wide text-stone-100 no-underline transition-colors hover:border-orange-700 hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700" href="/work"
+                    >View selected work</a
+                >
+                <a class="inline-flex justify-center border border-stone-900 px-4 py-3 font-mono text-xs uppercase tracking-wide no-underline transition-colors hover:border-orange-700 hover:bg-orange-700 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700" href="mailto:stephan@hayman.io"
+                    >Start a conversation</a
+                >
+            </div>
+        </div>
+        <aside class="border-t border-stone-900 pt-4 lg:col-start-4">
+            <Image
+                src={avatar}
+                alt="Portrait of Stephan van Stekelenburg"
+                class="mb-4 aspect-square w-full max-w-60 object-cover grayscale contrast-125"
+            />
+            <p class="text-sm leading-relaxed text-stone-600">
+                Architecture should make change less expensive, not merely make
+                diagrams more impressive.
+            </p>
+        </aside>
+    </section>
+
+    <section class="grid gap-8 border-b border-stone-900 py-16 lg:grid-cols-3 lg:gap-16 lg:py-20">
+        <p class="font-mono text-xs uppercase tracking-widest text-orange-700">Approach / 01</p>
+        <div class="prose prose-stone max-w-none font-serif text-2xl leading-relaxed lg:col-span-2 lg:text-3xl"><Content /></div>
+    </section>
+
+    <SectionHead
+        kicker="Writing / 02"
+        title="Ideas in practice"
+        href="/blog"
+        linkText="All writing"
+    />
+    <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
+        {
+            posts.map((post) => (
+                <Card
+                    href={`/blog/${contentSlug(post.id)}/`}
+                    image={post.data.image}
+                    meta={formatDate(post.data.date)}
+                    title={post.data.title}
+                    excerpt={post.data.excerpt}
+                />
+            ))
+        }
+    </div>
+
+    <SectionHead
+        kicker="Selected work / 03"
+        title="Systems at scale"
+        href="/work"
+        linkText="All work"
+    />
+    <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
+        {
+            works.map((item) => (
+                <Card
+                    href={`/work/${contentSlug(item.id)}/`}
+                    image={item.data.image}
+                    meta="Case study"
+                    title={item.data.title}
+                    excerpt={item.data.excerpt}
+                />
+            ))
+        }
+    </div>
+</Layout>
