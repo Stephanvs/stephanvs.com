@@ -7,9 +7,9 @@ import { HomeTemplate, ListTemplate, PageTemplate, PostTemplate, ProjectTemplate
 import type { ContentItem, SiteConfig } from './types';
 
 const CONFIG: SiteConfig = {
-  title: 'Stephanvs',
+  title: 'Stephan van Stekelenburg',
   description: 'Independent software architect & developer',
-  author: 'Stephanvs',
+  author: 'Stephan van Stekelenburg',
   baseUrl: 'https://stephanvs.com'
 };
 
