@@ -20,38 +20,38 @@ const works = (await getCollection("work")).slice(0, 2);
 ---
 
 <Layout title="Home" description={home.data.excerpt}>
-    <section class="hero">
-        <div>
-            <p class="hero-kicker">
+    <section class="grid gap-12 border-b border-stone-900 py-16 md:py-24 lg:grid-cols-4 lg:items-end lg:gap-16 lg:py-32">
+        <div class="lg:col-span-3">
+            <p class="font-mono text-xs uppercase tracking-widest text-orange-700">
                 Independent software architect &rarr; Netherlands
             </p>
-            <h1>{home.data.title}</h1>
-            <p class="hero-summary">{home.data.excerpt}</p>
-            <div class="actions">
-                <a class="button button-primary" href="/work"
+            <h1 class="mt-5 max-w-5xl font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">{home.data.title}</h1>
+            <p class="mt-7 max-w-3xl text-xl leading-relaxed text-stone-700 md:text-2xl">{home.data.excerpt}</p>
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a class="inline-flex justify-center border border-stone-900 bg-stone-900 px-4 py-3 font-mono text-xs uppercase tracking-wide text-stone-100 no-underline transition-colors hover:border-orange-700 hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700" href="/work"
                     >View selected work</a
                 >
-                <a class="button" href="mailto:stephan@hayman.io"
+                <a class="inline-flex justify-center border border-stone-900 px-4 py-3 font-mono text-xs uppercase tracking-wide no-underline transition-colors hover:border-orange-700 hover:bg-orange-700 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700" href="mailto:stephan@hayman.io"
                     >Start a conversation</a
                 >
             </div>
         </div>
-        <aside class="hero-aside">
+        <aside class="border-t border-stone-900 pt-4 lg:col-start-4">
             <Image
                 src={avatar}
                 alt="Portrait of Stephan van Stekelenburg"
-                class="avatar-img"
+                class="mb-4 aspect-square w-full max-w-60 object-cover grayscale contrast-125"
             />
-            <p>
+            <p class="text-sm leading-relaxed text-stone-600">
                 Architecture should make change less expensive, not merely make
                 diagrams more impressive.
             </p>
         </aside>
     </section>
 
-    <section class="intro">
-        <p class="section-kicker">Approach / 01</p>
-        <div class="intro-copy"><Content /></div>
+    <section class="grid gap-8 border-b border-stone-900 py-16 lg:grid-cols-3 lg:gap-16 lg:py-20">
+        <p class="font-mono text-xs uppercase tracking-widest text-orange-700">Approach / 01</p>
+        <div class="prose prose-stone max-w-none font-serif text-2xl leading-relaxed lg:col-span-2 lg:text-3xl"><Content /></div>
     </section>
 
     <SectionHead
@@ -60,7 +60,7 @@ const works = (await getCollection("work")).slice(0, 2);
         href="/blog"
         linkText="All writing"
     />
-    <div class="grid">
+    <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
         {
             posts.map((post) => (
                 <Card
@@ -80,7 +80,7 @@ const works = (await getCollection("work")).slice(0, 2);
         href="/work"
         linkText="All work"
     />
-    <div class="grid">
+    <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
         {
             works.map((item) => (
                 <Card

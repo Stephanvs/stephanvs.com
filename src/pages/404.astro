@@ -12,8 +12,10 @@ const { Content } = await render(notFound);
 ---
 
 <Layout title={notFound.data.title}>
-  <article class="article">
-    <h1>{notFound.data.title}</h1>
-    <Content />
+  <article class="mx-auto max-w-3xl py-16 md:py-20">
+    <h1 class="mb-10 font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl">{notFound.data.title}</h1>
+    <div class="prose prose-stone max-w-none prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700">
+      <Content />
+    </div>
   </article>
 </Layout>

@@ -8,9 +8,9 @@ const works = await getCollection('work');
 ---
 
 <Layout title="Work" description="Selected software architecture and engineering work.">
-  <section class="article">
-    <h1>Work</h1>
-    <div class="grid">
+  <section class="py-16 md:py-20">
+    <h1 class="mb-10 font-serif text-6xl leading-none tracking-tighter md:text-8xl">Work</h1>
+    <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
       {works.map((item) => (
         <Card
           href={`/work/${contentSlug(item.id)}/`}

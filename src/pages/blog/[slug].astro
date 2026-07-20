@@ -22,28 +22,33 @@ const tableOfContents = headings.filter(({ depth }) => depth === 2 || depth === 
 ---
 
 <Layout title={post.data.title} description={post.data.description ?? post.data.excerpt}>
-  <div class="article-layout">
+  <div class="py-12 lg:grid lg:grid-cols-4 lg:items-start lg:gap-10 lg:py-20">
     {tableOfContents.length > 0 && (
-      <nav class="toc" aria-label="On this page">
-        <p class="toc-title">On this page</p>
-        <ol>
+      <nav class="mb-10 bg-stone-200 p-5 lg:sticky lg:top-8 lg:mb-0 lg:max-h-screen lg:overflow-y-auto lg:bg-transparent lg:p-0" aria-label="On this page">
+        <p class="mb-3 border-b border-stone-900 pb-3 font-mono text-xs uppercase tracking-widest text-stone-600">On this page</p>
+        <ol class="grid list-none grid-cols-1 sm:grid-cols-2 sm:gap-x-4 lg:grid-cols-1 lg:gap-x-0">
           {tableOfContents.map((heading) => (
-            <li class={`toc-level-${heading.depth}`}>
-              <a href={`#${heading.slug}`} data-toc-link={heading.slug}>{heading.text}</a>
+            <li class:list={['border-b border-stone-300 lg:border-b-0', { 'lg:pl-4': heading.depth === 3 }]}>
+              <a
+                class="block border-l-2 border-stone-300 py-2 pl-3 text-sm leading-snug text-stone-500 no-underline transition-colors hover:text-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700"
+                href={`#${heading.slug}`}
+                data-toc-link={heading.slug}>{heading.text}</a>
             </li>
           ))}
         </ol>
       </nav>
     )}
-    <article class="article">
-      <h1>{post.data.title}</h1>
-      <span class="post-meta">
+    <article class="min-w-0 lg:col-span-2 lg:col-start-2">
+      <h1 class="mb-6 font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl">{post.data.title}</h1>
+      <span class="mb-8 block font-mono text-xs uppercase tracking-wide text-stone-500">
         {formatDate(post.data.date)}
         {post.data.tags?.length ? ` · ${post.data.tags.join(', ')}` : ''}
       </span>
-      <Content />
+      <div class="prose prose-stone max-w-none md:prose-lg prose-headings:scroll-mt-8 prose-headings:font-serif prose-headings:tracking-tight prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700 prose-blockquote:border-orange-700 prose-code:bg-stone-200 prose-code:px-1 prose-code:py-0.5 prose-code:before:content-none prose-code:after:content-none prose-img:my-8">
+        <Content />
+      </div>
     </article>
-    <div class="article-spacer" aria-hidden="true"></div>
+    <div class="hidden lg:col-start-4 lg:block" aria-hidden="true"></div>
   </div>
 </Layout>
 
@@ -55,7 +60,14 @@ const tableOfContents = headings.filter(({ depth }) => depth === 2 || depth === 
 
   if (sections.length > 0) {
     const setActiveSection = (id: string) => {
-      tocLinks.forEach((link) => link.classList.toggle('active', link.dataset.tocLink === id));
+      tocLinks.forEach((link) => {
+        const isActive = link.dataset.tocLink === id;
+        link.classList.toggle('border-orange-700', isActive);
+        link.classList.toggle('text-orange-700', isActive);
+        link.classList.toggle('font-semibold', isActive);
+        link.classList.toggle('border-stone-300', !isActive);
+        link.classList.toggle('text-stone-500', !isActive);
+      });
     };
     const observer = new IntersectionObserver((entries) => {
       const visible = entries

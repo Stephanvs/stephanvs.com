@@ -13,11 +13,18 @@ interface Props {
 const { href, image, meta, title, excerpt } = Astro.props;
 ---
 
-<a href={href} class="card">
-  <span class="card-media"><Image src={image} alt="" loading="lazy" /></span>
-  <span>
-    <small>{meta}</small>
-    <h3>{title}</h3>
-    <p>{excerpt}</p>
+<a href={href} class="group grid min-w-0 grid-cols-1 gap-6 border-b border-stone-300 py-8 no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700 sm:grid-cols-3">
+  <span class="aspect-video overflow-hidden bg-stone-200 sm:aspect-square">
+    <Image
+      src={image}
+      alt=""
+      loading="lazy"
+      class="h-full w-full object-cover saturate-50 transition duration-500 group-hover:scale-105 group-hover:saturate-100 motion-reduce:transition-none"
+    />
+  </span>
+  <span class="sm:col-span-2">
+    <span class="font-mono text-xs uppercase tracking-wide text-stone-500">{meta}</span>
+    <h3 class="mt-2 font-serif text-2xl leading-tight tracking-tight transition-colors group-hover:text-orange-700 lg:text-3xl">{title}</h3>
+    <p class="mt-3 text-sm leading-relaxed text-stone-600">{excerpt}</p>
   </span>
 </a>

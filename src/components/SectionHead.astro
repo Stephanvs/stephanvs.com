@@ -9,10 +9,12 @@ interface Props {
 const { kicker, title, href, linkText } = Astro.props;
 ---
 
-<div class="section-head">
+<div class="mb-6 mt-20 flex items-end justify-between gap-6">
   <div>
-    <p class="section-kicker">{kicker}</p>
-    <h2>{title}</h2>
+    <p class="font-mono text-xs uppercase tracking-widest text-orange-700">{kicker}</p>
+    <h2 class="mt-2 font-serif text-4xl leading-none tracking-tight sm:text-5xl">{title}</h2>
   </div>
-  <a class="section-link" href={href}>{linkText} <span aria-hidden="true">→</span></a>
+  <a class="shrink-0 font-mono text-xs uppercase tracking-wide underline decoration-orange-700 underline-offset-4 transition-colors hover:text-orange-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700" href={href}>
+    {linkText} <span aria-hidden="true">→</span>
+  </a>
 </div>

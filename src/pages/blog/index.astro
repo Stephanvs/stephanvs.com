@@ -9,9 +9,9 @@ const posts = (await getCollection('posts'))
 ---
 
 <Layout title="Blog" description="Writing about software architecture, engineering, and tools.">
-  <section class="article">
-    <h1>Blog</h1>
-    <div class="grid">
+  <section class="py-16 md:py-20">
+    <h1 class="mb-10 font-serif text-6xl leading-none tracking-tighter md:text-8xl">Blog</h1>
+    <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
       {posts.map((post) => (
         <Card
           href={`/blog/${contentSlug(post.id)}/`}

@@ -6,7 +6,7 @@ A personal website built with Astro, TypeScript, and content collections.
 
 - [Astro](https://astro.build) static site generation
 - MDX content collections for writing and work
-- TypeScript and plain CSS
+- TypeScript and Tailwind CSS
 
 ## Development
 
