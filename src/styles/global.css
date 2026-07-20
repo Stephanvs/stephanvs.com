@@ -39,7 +39,7 @@ nav li a { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.
 nav li a:hover, nav li a.active { color: var(--accent); }
 
 main { margin: 0 auto; max-width: 1280px; }
-.article { margin: 5rem auto; max-width: 760px; }
+.article { margin: 5rem auto; }
 .article-layout { align-items: start; display: grid; gap: 3.5rem; grid-template-columns: 220px minmax(0, 760px) 220px; margin: 5rem 0; }
 .article-layout .article { margin: 0; min-width: 0; }
 .toc { max-height: calc(100vh - 4rem); overflow-y: auto; padding-right: 0.75rem; position: sticky; scrollbar-width: thin; top: 2rem; }
