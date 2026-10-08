@@ -1,0 +1,95 @@
+---
+title: Popcorn privacy policy
+excerpt: How Popcorn handles your TeamCity connection, device storage, and support information.
+---
+
+**Last updated:** 8 October 2026
+**Applies to:** the iOS app named “Popcorn”.
+
+**Operator:** Stephan van Stekelenburg (Netherlands)
+
+**Contact:** support@stephanvs.com
+
+Popcorn works with JetBrains TeamCity. Popcorn is an independent client and is not affiliated with or endorsed by JetBrains. TeamCity is a trademark of JetBrains s.r.o.
+
+## Summary
+
+Popcorn is a **bring-your-own-server** client for TeamCity Cloud. You enter your TeamCity Cloud instance name and a personal access token; Popcorn adds HTTPS and `.teamcity.com`. TeamCity API requests and the token are sent directly to that server. The current app includes no analytics, advertising, or third-party crash-reporting SDKs, and the developer operates no backend that receives your TeamCity credentials or build information. Information you choose to send for support is handled separately, as described below.
+
+## Data you provide
+
+| Data | Where it goes | Purpose |
+|------|----------------|---------|
+| TeamCity base URL | App-local preferences; used as API base | Connect to your server |
+| Personal access token | Device Keychain; sent as `Authorization: Bearer` to your server only | Authenticate REST calls |
+| Optional display name for the connection | Device storage | Label the saved connection |
+| CI metadata returned by your server (projects, builds, etc.) | Displayed on device; held in memory / ephemeral cache as needed to show UI | Show build status and perform actions you request |
+
+The developer does **not** receive your token, TeamCity URL, or build information through a Popcorn backend.
+
+## App data collection
+
+The current app has:
+
+- No account registration with the publisher
+- No analytics or usage tracking SDKs
+- No third-party crash-reporting SDKs
+- No advertising identifiers or tracking across other apps or websites
+
+The developer does not sell your personal data.
+
+If the app's data practices change, the policy and App Store privacy information will be updated to describe those practices.
+
+## Device permissions
+
+The app needs network access to reach the TeamCity host you configure. It does not request access to contacts, photos, location, camera, or microphone.
+
+When you enter a TeamCity server on your local network, iOS may request local-network
+access to connect to that host. Popcorn does not discover servers with Bonjour.
+
+## Security
+
+- TeamCity connections require **HTTPS**.
+- Tokens are stored in the iOS **Keychain**.
+- Prefer TeamCity tokens with the least privilege you need (project-limited tokens when possible).
+- You can remove the saved connection and clear credentials from in-app settings.
+
+You are responsible for the security and privacy practices of the TeamCity server you choose to connect to (including your organization’s policies).
+
+## Support information
+
+If you email support@stephanvs.com, the developer receives your email address and the information you choose to include, such as the problem description, app version, device details, or screenshots. That information is used to respond to your request and investigate reported problems. Do not include tokens, passwords, confidential server information, or sensitive build data.
+
+Support correspondence is retained only as long as needed to handle the request and maintain relevant support records, or meet applicable legal obligations, then deleted.
+
+## Children’s privacy
+
+Popcorn is a developer tool and is not designed specifically for children. The developer does not knowingly collect children's personal information through the app.
+
+## Third parties
+
+- **Your TeamCity server** (JetBrains TeamCity Cloud or a server operated by you/your org) receives API requests you initiate. Their privacy terms apply to that processing.
+- **Apple** processes App Store, TestFlight, and device platform data under Apple’s policies.
+
+During the TestFlight beta, Apple processes installation, usage, crash, and feedback
+information. Feedback you choose to submit through TestFlight is shared with the
+developer through Apple. Omit tokens and sensitive server information from feedback.
+
+## International transfers
+
+If your TeamCity server is hosted outside your country (including TeamCity Cloud regions), your requests go to that host. Review your organization’s and JetBrains’ terms for Cloud.
+
+## Your choices
+
+- Do not enter a token you do not want stored on the device.
+- Delete the connection / clear credentials in Settings.
+- Remove each saved server before uninstalling to clear its credentials. Keychain items can persist after uninstalling; uninstalling alone does not guarantee token deletion.
+- Contact the address below for policy questions.
+
+## Contact
+
+For support, privacy questions, or requests concerning information you sent to the developer, email [support@stephanvs.com](mailto:support@stephanvs.com). The developer is Stephan van Stekelenburg in the Netherlands. You can also visit [stephanvs.com](https://stephanvs.com/).
+
+## Changes
+
+Material changes will be reflected by updating the “Last updated” date and the hosted policy. The offline in-app policy will be kept consistent with the app's current practices.

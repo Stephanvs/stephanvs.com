@@ -1,0 +1,39 @@
+---
+title: Popcorn for TeamCity
+excerpt: Support and connection help for the independent TeamCity Cloud client for iPhone and iPad.
+---
+
+Popcorn lets you check TeamCity Cloud builds, read logs, investigate failures, and start or cancel builds from iPhone or iPad. It is a one-time app purchase with no subscription or in-app purchases. TeamCity hosting is separate.
+
+## Support
+
+Email [support@stephanvs.com](mailto:support@stephanvs.com) for help. Include your app version, iOS version, and a description of the problem. Please remove access tokens, passwords, confidential project names, and sensitive build information from anything you send.
+
+## Connect to TeamCity Cloud
+
+1. Open your TeamCity Cloud instance in a browser and sign in.
+2. Create a personal access token in your TeamCity profile with the permissions you need. Your TeamCity administrator may need to enable access or grant permissions.
+3. In Popcorn, enter your instance name, for example `my-team` for `https://my-team.teamcity.com`. HTTPS and `.teamcity.com` are added automatically.
+4. Enter your token and connect. Tokens are stored in the iOS Keychain and sent directly to your TeamCity server.
+
+You need an existing TeamCity Cloud account, an internet connection, and iOS 17 or later. Popcorn does not include a TeamCity account or hosting.
+
+## Common questions
+
+### I cannot connect
+
+Check that your instance opens in a browser, that the instance name is correct, and that your personal access token has not expired or been revoked. Enter just the part before `.teamcity.com`. Confirm your token's permissions with your administrator.
+
+### A build action is unavailable
+
+Starting and cancelling builds requires the corresponding TeamCity permissions. Agent status and investigations are read-only in Popcorn.
+
+### How do I remove a connection?
+
+Open Settings and remove the saved server. This deletes its profile and Keychain token from this device. Remove each server before uninstalling if you want to clear its credentials: Keychain items can persist after uninstalling. You can also revoke the token in TeamCity.
+
+## Privacy and terms
+
+Read the [Popcorn privacy policy](/privacy-policy/) and [terms of service](/terms-of-service/).
+
+Popcorn is an independent client and is not affiliated with or endorsed by JetBrains. TeamCity is a trademark of JetBrains s.r.o.

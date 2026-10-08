@@ -1,0 +1,24 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import { contentSlug } from '../lib/content';
+
+export async function getStaticPaths() {
+  const pages = await getCollection('pages');
+  return pages
+    .filter((page) => !['home', '404'].includes(contentSlug(page.id)))
+    .map((page) => ({ params: { slug: contentSlug(page.id) }, props: { page } }));
+}
+
+const { page } = Astro.props;
+const { Content } = await render(page);
+---
+
+<Layout title={page.data.title} description={page.data.excerpt}>
+  <article class="mx-auto max-w-3xl py-16 md:py-20">
+    <h1 class="mb-10 font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl">{page.data.title}</h1>
+    <div class="prose prose-stone max-w-none prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700">
+      <Content />
+    </div>
+  </article>
+</Layout>
