@@ -60,8 +60,15 @@ const pageTitle = `${title} | Stephan van Stekelenburg`;
 		</header>
 		<main class="mx-auto max-w-7xl"><slot /></main>
 		<footer class="mx-auto mt-24 flex max-w-7xl flex-col justify-between gap-3 border-t border-stone-900 py-8 font-mono text-xs text-stone-500 sm:flex-row">
-			<span>&copy; {new Date().getFullYear()} Stephan van Stekelenburg</span>
-			<span>Software architecture / distributed systems / engineering</span>
+			<div class="flex flex-col gap-2">
+				<span>&copy; {new Date().getFullYear()} Stephan van Stekelenburg</span>
+				<span>Software architecture / distributed systems / engineering</span>
+			</div>
+			<nav class="flex flex-wrap gap-x-5 gap-y-3" aria-label="Product information">
+				<a href="/popcorn/" class="underline-offset-4 hover:text-orange-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700">Popcorn support</a>
+				<a href="/privacy-policy/" class="underline-offset-4 hover:text-orange-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700">Popcorn privacy</a>
+				<a href="/terms-of-service/" class="underline-offset-4 hover:text-orange-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700">Popcorn terms</a>
+			</nav>
 		</footer>
 	</body>
 </html>
