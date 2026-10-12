@@ -1,11 +1,9 @@
 ---
-import { getCollection } from 'astro:content';
 import Card from '../../components/Card.astro';
 import Layout from '../../layouts/Layout.astro';
-import { contentSlug, formatDate } from '../../lib/content';
+import { formatDate, getPostSummaries } from '../../lib/content';
 
-const posts = (await getCollection('posts'))
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const posts = await getPostSummaries();
 ---
 
 <Layout title="Blog" description="Writing about software architecture, engineering, and tools.">
@@ -14,11 +12,11 @@ const posts = (await getCollection('posts'))
     <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
       {posts.map((post) => (
         <Card
-          href={`/blog/${contentSlug(post.id)}/`}
-          image={post.data.image}
-          meta={formatDate(post.data.date)}
-          title={post.data.title}
-          excerpt={post.data.excerpt}
+          href={post.href}
+          image={post.image}
+          meta={formatDate(post.date)}
+          title={post.title}
+          excerpt={post.excerpt}
         />
       ))}
     </div>

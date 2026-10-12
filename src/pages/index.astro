@@ -4,7 +4,7 @@ import { getCollection, render } from "astro:content";
 import Card from "../components/Card.astro";
 import SectionHead from "../components/SectionHead.astro";
 import Layout from "../layouts/Layout.astro";
-import { contentSlug, formatDate } from "../lib/content";
+import { contentSlug, formatDate, getPostSummaries } from "../lib/content";
 import avatar from "../../content/pages/home/stephanvs.png";
 
 const pages = await getCollection("pages");
@@ -13,9 +13,7 @@ const home = pages.find((page) => contentSlug(page.id) === "home");
 if (!home) throw new Error("Home content was not found");
 
 const { Content } = await render(home);
-const posts = (await getCollection("posts"))
-    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-    .slice(0, 3);
+const posts = (await getPostSummaries()).slice(0, 3);
 const works = (await getCollection("work")).slice(0, 2);
 ---
 
@@ -64,11 +62,11 @@ const works = (await getCollection("work")).slice(0, 2);
         {
             posts.map((post) => (
                 <Card
-                    href={`/blog/${contentSlug(post.id)}/`}
-                    image={post.data.image}
-                    meta={formatDate(post.data.date)}
-                    title={post.data.title}
-                    excerpt={post.data.excerpt}
+                    href={post.href}
+                    image={post.image}
+                    meta={formatDate(post.date)}
+                    title={post.title}
+                    excerpt={post.excerpt}
                 />
             ))
         }

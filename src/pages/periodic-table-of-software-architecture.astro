@@ -1,0 +1,530 @@
+---
+import Layout from "../layouts/Layout.astro";
+import {
+    categories,
+    compounds,
+    costLabels,
+    elements,
+    getCategory,
+    getElement,
+    type ArchitectureElement,
+    type CategoryKey,
+} from "../data/software-architecture";
+import { formatDate, periodicTablePost as post } from "../lib/content";
+import "../styles/periodic-table.css";
+
+const colors = (key: CategoryKey) => {
+    const { fill, ink } = getCategory(key);
+    return `--fill:${fill};--ink:${ink}`;
+};
+
+const categoryOrder = new Map(
+    categories.map((category, index) => [category.key, (index + 1) * 100]),
+);
+const tileOrder = (element: ArchitectureElement) =>
+    categoryOrder.get(element.category)! + element.number;
+const related = (element: ArchitectureElement) =>
+    element.related.map((id) => getElement(id)!);
+const costBars = [1, 2, 3, 4, 5];
+
+const series = [
+    { row: 8, label: "Delivery series" },
+    { row: 9, label: "Practice series" },
+];
+---
+
+<Layout title={post.title} description={post.excerpt}>
+    <article class="py-12 lg:py-20">
+        <header class="max-w-4xl">
+            <p class="font-mono text-xs uppercase tracking-widest text-orange-700">
+                Interactive reference
+            </p>
+            <h1 class="mt-5 font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl">
+                {post.title}
+            </h1>
+            <span class="mt-6 block font-mono text-xs uppercase tracking-wide text-stone-600">
+                {formatDate(post.date)} · architecture, patterns
+            </span>
+            <div class="prose prose-stone mt-8 max-w-3xl md:prose-lg prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700">
+                <p>
+                    Alёna Batitskaia's{" "}
+                    <a href="https://blog.alena.rocks/en/artifacts/html-elements">
+                        Periodic Table of the HTML Elements
+                    </a>{" "}
+                    made a sprawling spec feel small enough to hold in your
+                    head. Software architecture could use the same treatment.
+                    Its vocabulary is spread across books, conference talks, and
+                    cloud vendor docs, and the same idea often goes by three
+                    different names.
+                </p>
+                <p>
+                    This table collects 92 of the principles, patterns, and
+                    practices I reach for most, grouped into families. Every
+                    element has a short entry: what it is, when it earns its
+                    place, and what it will cost you. Hover to preview, click to
+                    read, and use the compounds further down to see how elements
+                    combine.
+                </p>
+            </div>
+        </header>
+
+        <section
+            id="table"
+            class="pt pt-wide mt-14 scroll-mt-6"
+            aria-labelledby="table-heading"
+        >
+            <h2 id="table-heading" class="sr-only">
+                The table
+            </h2>
+
+            <div class="pt-toolbar">
+                <div class="pt-search">
+                    <label for="pt-search">Find</label>
+                    <input
+                        id="pt-search"
+                        type="search"
+                        placeholder="Saga, caching, boundaries…"
+                        autocomplete="off"
+                        data-pt-search
+                    />
+                </div>
+                <div
+                    class="pt-legend"
+                    role="group"
+                    aria-label="Filter by family"
+                >
+                    {categories.map((category) => (
+                        <button
+                            type="button"
+                            class="pt-chip"
+                            aria-pressed="false"
+                            data-pt-chip
+                            data-category={category.key}
+                            style={colors(category.key)}
+                        >
+                            <span
+                                class="pt-chip__swatch"
+                                aria-hidden="true"
+                            ></span>
+                            {category.name}
+                        </button>
+                    ))}
+                </div>
+                <div class="pt-status">
+                    <span aria-live="polite" data-pt-status>
+                        {elements.length} elements
+                    </span>
+                    <button type="button" class="pt-reset" data-pt-reset hidden>
+                        Clear filters
+                    </button>
+                </div>
+            </div>
+
+            <div class="pt-grid" data-pt-grid>
+                <div class="pt-panel" data-pt-panel>
+                    <div class="pt-panel__tile" data-pt-big-tile>
+                        <span class="pt-tile__body">
+                            <span class="pt-tile__top">
+                                <span data-tile="number">Nº</span>
+                                <span class="pt-cost" data-tile="cost">
+                                    {costBars.map((bar) => (
+                                        <i
+                                            data-on={bar <= 3 ? "" : undefined}
+                                        ></i>
+                                    ))}
+                                </span>
+                            </span>
+                            <span class="pt-tile__symbol" data-tile="symbol">
+                                Sy
+                            </span>
+                            <span class="pt-tile__name" data-tile="name">
+                                Name
+                            </span>
+                        </span>
+                    </div>
+                    <div class="pt-panel__body">
+                        <div data-pt-panel-key>
+                            <p class="pt-kicker">How to read an element</p>
+                            <p class="pt-panel__title">
+                                Hover over any element
+                            </p>
+                            <dl class="pt-key">
+                                <dt>Nº</dt>
+                                <dd>
+                                    Reading order, left to right and top to
+                                    bottom.
+                                </dd>
+                                <dt>Bars</dt>
+                                <dd>
+                                    Complexity cost: how much it adds to a
+                                    system, from one to five.
+                                </dd>
+                                <dt>Colour</dt>
+                                <dd>
+                                    Its family. Use the legend above to filter.
+                                </dd>
+                            </dl>
+                            <p class="pt-panel__hint">
+                                Click to open · Arrow keys to move
+                            </p>
+                        </div>
+                        <div data-pt-panel-preview hidden>
+                            <p class="pt-kicker" data-preview="category"></p>
+                            <p class="pt-panel__title" data-preview="name"></p>
+                            <p
+                                class="pt-panel__summary"
+                                data-preview="summary"
+                            ></p>
+                            <p class="pt-panel__hint">
+                                Click for the full entry
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {categories.map((category) => (
+                    <div
+                        class="pt-group-heading"
+                        style={`--order:${categoryOrder.get(category.key)}`}
+                    >
+                        <h3>{category.name}</h3>
+                        <p>{category.blurb}</p>
+                    </div>
+                ))}
+
+                {series.map(({ row, label }) => (
+                    <span
+                        class="pt-series-label"
+                        style={`--row:${row}`}
+                        aria-hidden="true"
+                    >
+                        {label}
+                    </span>
+                ))}
+
+                {elements.map((element) => (
+                    <a
+                        href={`#element-${element.id}`}
+                        class="pt-tile"
+                        data-pt-tile
+                        data-id={element.id}
+                        data-category={element.category}
+                        style={`${colors(element.category)};--row:${element.row};--col:${element.col};--order:${tileOrder(element)}`}
+                        aria-label={`${element.number}. ${element.name} (${getCategory(element.category).name})`}
+                    >
+                        <span class="pt-tile__body" aria-hidden="true">
+                            <span class="pt-tile__top">
+                                <span>{element.number}</span>
+                                <span class="pt-cost">
+                                    {costBars.map((bar) => (
+                                        <i
+                                            data-on={
+                                                bar <= element.cost
+                                                    ? ""
+                                                    : undefined
+                                            }
+                                        ></i>
+                                    ))}
+                                </span>
+                            </span>
+                            <span class="pt-tile__symbol">
+                                {element.symbol}
+                            </span>
+                            <span class="pt-tile__name">{element.label}</span>
+                        </span>
+                    </a>
+                ))}
+            </div>
+        </section>
+
+        <section class="mt-20 max-w-3xl" aria-labelledby="reading">
+            <h2
+                id="reading"
+                class="font-serif text-4xl leading-none tracking-tight sm:text-5xl"
+            >
+                Reading the table
+            </h2>
+            <div class="prose prose-stone mt-6 md:prose-lg">
+                <p>
+                    The layout borrows from chemistry on purpose.{" "}
+                    <strong>Columns are families.</strong> Principles sit on the
+                    far left, the way the most reactive elements do: they
+                    combine with everything. Architectural styles, domain
+                    modelling, and data fill the middle. Integration,
+                    resilience, observability, and security line the right edge,
+                    and security takes the noble-gas column because a
+                    well-secured system should be about as reactive as helium.
+                </p>
+                <p>
+                    <strong>Rows get heavier as you go down.</strong> Within
+                    most families, the top elements are cheap to adopt and the
+                    bottom ones carry real weight. A monolith sits above
+                    microservices, read replicas above sharding, a timeout above
+                    graceful degradation. The bars on each tile make that
+                    explicit, but treat them as a rough guide: cost depends on
+                    your team as much as on the pattern.
+                </p>
+                <p>
+                    <strong>
+                        The two detached rows are series that act on everything
+                        else
+                    </strong>
+                    , like the lanthanides and actinides at the bottom of a real
+                    periodic table. Delivery practices decide how change reaches
+                    production. Architecture practices decide how decisions get
+                    made in the first place. The dashed tiles are the ones made
+                    of people and conversations rather than code.
+                </p>
+            </div>
+        </section>
+
+        <section class="pt mt-20" aria-labelledby="compounds">
+            <div class="max-w-3xl">
+                <h2
+                    id="compounds"
+                    class="font-serif text-4xl leading-none tracking-tight sm:text-5xl"
+                >
+                    Common compounds
+                </h2>
+                <p class="mt-6 text-lg leading-relaxed text-stone-700">
+                    Elements rarely appear alone. These are combinations that
+                    show up again and again, and they are stable because each
+                    element covers a weakness of another. Select one to light it
+                    up on the table.
+                </p>
+            </div>
+            <div class="pt-compounds mt-8">
+                {compounds.map((compound) => (
+                    <button
+                        type="button"
+                        class="pt-compound"
+                        aria-pressed="false"
+                        data-pt-compound={compound.elements.join(" ")}
+                        data-name={compound.name}
+                    >
+                        <span class="pt-formula" aria-hidden="true">
+                            {compound.elements.map((id) => {
+                                const element = getElement(id)!;
+                                return (
+                                    <span
+                                        data-category={element.category}
+                                        style={colors(element.category)}
+                                    >
+                                        {element.symbol}
+                                    </span>
+                                );
+                            })}
+                        </span>
+                        <span class="pt-compound__name">{compound.name}</span>
+                        <span class="pt-compound__desc">
+                            {compound.description}
+                        </span>
+                        <span class="sr-only">
+                            Elements:{" "}
+                            {compound.elements
+                                .map((id) => getElement(id)!.name)
+                                .join(", ")}
+                            .
+                        </span>
+                    </button>
+                ))}
+            </div>
+        </section>
+
+        <section class="pt mt-20" aria-labelledby="index">
+            <div class="max-w-3xl">
+                <h2
+                    id="index"
+                    class="font-serif text-4xl leading-none tracking-tight sm:text-5xl"
+                >
+                    All elements
+                </h2>
+                <p class="mt-6 text-lg leading-relaxed text-stone-700">
+                    Every entry, grouped by family, if you'd rather read than
+                    click.
+                </p>
+            </div>
+            <div class="mt-10 max-w-4xl">
+                {categories.map((category) => (
+                    <div class="pt-index-group">
+                        <div class="mb-2 flex items-baseline justify-between gap-4 border-b border-stone-900 pb-3">
+                            <h3 class="font-serif text-2xl tracking-tight">
+                                {category.name}
+                            </h3>
+                            <p class="text-right text-sm text-stone-600">
+                                {category.blurb}
+                            </p>
+                        </div>
+                        {elements
+                            .filter(
+                                (element) => element.category === category.key,
+                            )
+                            .map((element) => (
+                                <details
+                                    class="pt-index-entry"
+                                    id={`element-${element.id}`}
+                                >
+                                    <summary>
+                                        <span
+                                            class="pt-mini"
+                                            data-category={element.category}
+                                            style={colors(element.category)}
+                                            aria-hidden="true"
+                                        >
+                                            {element.symbol}
+                                        </span>
+                                        <span>
+                                            <span class="pt-index-name">
+                                                {element.name}
+                                            </span>
+                                            <span class="pt-index-summary">
+                                                {element.summary}
+                                            </span>
+                                        </span>
+                                    </summary>
+                                    <div class="pt-index-body">
+                                        <p>{element.description}</p>
+                                        <dl>
+                                            <div>
+                                                <dt>Reach for it when</dt>
+                                                <dd>{element.useWhen}</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Watch out for</dt>
+                                                <dd>{element.watchOutFor}</dd>
+                                            </div>
+                                        </dl>
+                                        <div>
+                                            <p class="mb-2 font-mono text-xs uppercase tracking-widest text-stone-600">
+                                                Complexity cost:{" "}
+                                                {costLabels[element.cost]} ·
+                                                Related
+                                            </p>
+                                            <div class="pt-related">
+                                                {related(element).map(
+                                                    (other) => (
+                                                        <a
+                                                            href={`#element-${other.id}`}
+                                                            data-category={
+                                                                other.category
+                                                            }
+                                                            style={colors(
+                                                                other.category,
+                                                            )}
+                                                        >
+                                                            <b>
+                                                                {other.symbol}
+                                                            </b>
+                                                            {other.name}
+                                                        </a>
+                                                    ),
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
+                            ))}
+                    </div>
+                ))}
+            </div>
+        </section>
+
+        <section class="mt-20 max-w-3xl border-t border-stone-900 pt-8">
+            <div class="prose prose-stone md:prose-lg">
+                <p>
+                    No table like this is complete, and the placement is
+                    opinionated. You could argue that sharding belongs with
+                    resilience, or that hexagonal and clean architecture are one
+                    element. That argument is the point. Architecture is
+                    choosing which forces matter for your system, and a shared
+                    vocabulary makes the choosing easier to talk about.
+                </p>
+            </div>
+        </section>
+    </article>
+
+    <dialog
+        class="pt pt-dialog"
+        aria-labelledby="pt-dialog-title"
+        data-pt-dialog
+    >
+        <div class="pt-dialog__bar">
+            <span data-dialog="position"></span>
+            <div class="pt-dialog__nav">
+                <button
+                    type="button"
+                    data-dialog-step="-1"
+                    aria-label="Previous element"
+                >
+                    ←
+                </button>
+                <button
+                    type="button"
+                    data-dialog-step="1"
+                    aria-label="Next element"
+                >
+                    →
+                </button>
+                <button type="button" data-dialog-close>
+                    Close
+                </button>
+            </div>
+        </div>
+        <div class="pt-dialog__content">
+            <div>
+                <div class="pt-panel__tile" data-pt-big-tile aria-hidden="true">
+                    <span class="pt-tile__body">
+                        <span class="pt-tile__top">
+                            <span data-tile="number"></span>
+                            <span class="pt-cost" data-tile="cost">
+                                {costBars.map(() => (
+                                    <i></i>
+                                ))}
+                            </span>
+                        </span>
+                        <span class="pt-tile__symbol" data-tile="symbol"></span>
+                        <span class="pt-tile__name" data-tile="name"></span>
+                    </span>
+                </div>
+                <dl class="pt-dialog__meta">
+                    <div>
+                        <dt>Family</dt>
+                        <dd data-dialog="family"></dd>
+                    </div>
+                    <div>
+                        <dt>Complexity cost</dt>
+                        <dd data-dialog="cost"></dd>
+                    </div>
+                </dl>
+            </div>
+            <div>
+                <p class="pt-kicker" data-dialog="kicker"></p>
+                <h2
+                    class="pt-dialog__title"
+                    id="pt-dialog-title"
+                    data-dialog="name"
+                ></h2>
+                <p class="pt-dialog__summary" data-dialog="summary"></p>
+                <p class="pt-dialog__description" data-dialog="description"></p>
+                <dl class="pt-dialog__facts">
+                    <div>
+                        <dt>Reach for it when</dt>
+                        <dd data-dialog="useWhen"></dd>
+                    </div>
+                    <div>
+                        <dt>Watch out for</dt>
+                        <dd data-dialog="watchOutFor"></dd>
+                    </div>
+                </dl>
+                <div class="pt-dialog__related">
+                    <p class="pt-dialog__label">Related elements</p>
+                    <div class="pt-related" data-dialog="related"></div>
+                </div>
+            </div>
+        </div>
+    </dialog>
+</Layout>
+
+<script>
+    import "../scripts/periodic-table";
+</script>
