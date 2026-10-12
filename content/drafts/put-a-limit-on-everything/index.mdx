@@ -1,0 +1,284 @@
+---
+title: "Put a Limit on Everything: TigerStyle for Enterprise .NET"
+date: 2026-10-19
+excerpt: Every unbounded queue, cache, and retry loop is a failure you haven't scheduled yet. What .NET teams can borrow from TigerBeetle's coding style.
+description: Every unbounded queue, cache, and retry loop is a failure you haven't scheduled yet. What .NET teams can borrow from TigerBeetle's coding style.
+tags: ["dotnet", "architecture", "resilience", "tigerstyle"]
+image: ./cover.webp
+---
+
+Picture a telemetry endpoint. It accepts an event, drops it into a channel, and returns `202 Accepted`. A hosted service reads from the channel and writes to the database. It's clean and it's fast. It passes every test.
+
+```csharp
+var channel = Channel.CreateUnbounded<TelemetryEvent>();
+```
+
+Then the database gets slow on a Friday night. Not down, just slow. The worker drains 300 events a second while 500 arrive. The channel grows by 200 events every second. Nothing throws. Health checks stay green, because the process is alive and the endpoint still answers. Memory climbs all weekend until the orchestrator kills the pod, and every event in the channel dies with it.
+
+So the unbounded queue lost data anyway. It just lost all of it at once, instead of the oldest few hundred.
+
+Nobody wrote a bug here. Nobody decided what "too much" meant either. That decision got made regardless, by the OOM killer, at the worst possible moment.
+
+Every unbounded thing in your system is a failure you haven't scheduled yet.
+
+## TigerStyle, briefly
+
+TigerBeetle is a financial transactions database written in Zig. The team published their coding rules as [TIGER_STYLE.md](https://github.com/tigerbeetle/tigerbeetle/blob/main/docs/TIGER_STYLE.md). It's opinionated, and it's written for a database that has to stay correct under any failure. A lot of it won't map to a line-of-business .NET service. I won't pretend it does.
+
+It opens with a priority order: "Our design goals are safety, performance, and developer experience. In that order."
+
+Three of its ideas travel well:
+
+1. Put a limit on everything.
+2. Assert what you expect, and crash when it's wrong.
+3. Allocate up front, not in the hot path.
+
+The first one does most of the work. In their words, "all loops and all queues must have a fixed upper bound to prevent infinite loops or tail latency spikes." Your system already has limits. Memory, connections, and the patience of whoever is calling you all run out eventually. The only choice you get is whether you pick the limit and what happens at it, or whether production picks for you.
+
+## Where .NET leaves the limit to you
+
+.NET isn't careless about limits. Some defaults are good. `System.Text.Json` refuses to read past a nesting depth of 64. Kestrel rejects request bodies over about 30 MB. The standard resilience handler in `Microsoft.Extensions.Http.Resilience` caps a request at 30 seconds in total. Somebody thought hard about those.
+
+Other places are wide open.
+
+| API | Default | What happens under load |
+|---|---|---|
+| `Channel.CreateUnbounded<T>()` | No limit | Grows until the process dies |
+| `ConcurrentQueue<T>` | No limit | Same |
+| `MemoryCache` | `SizeLimit` is null | Grows with your key space |
+| `SocketsHttpHandler.MaxConnectionsPerServer` | `int.MaxValue` | A slow dependency gets more connections, which makes it slower |
+| `HttpClient.Timeout` | 100 seconds | Technically a limit, rarely the one you want |
+| Kestrel `MaxConcurrentConnections` | null | Accepts connections until something else gives |
+| `Task.WhenAll(items.Select(...))` | One task per item | Your input decides your concurrency |
+| EF Core `ToListAsync()` without `Take` | The whole result | One large customer becomes one large allocation |
+
+The framework teams clearly believe in limits. They just couldn't set them everywhere, because they don't know your traffic. That part is yours.
+
+{/* INTERACTIVE: clickable audit table. Click an API to reveal its default, the failure mode, a recommended bound, and a code fix. Optional: copyable grep/Roslyn snippet to scan your own codebase. */}
+
+Most of the fixes are small.
+
+Fan-out gets a ceiling:
+
+```csharp
+await Parallel.ForEachAsync(
+    customerIds,
+    new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = ct },
+    async (id, token) => await client.SyncAsync(id, token));
+```
+
+Queries take one more row than you're willing to accept:
+
+```csharp
+var orders = await db.Orders
+    .Where(o => o.CustomerId == customerId)
+    .OrderBy(o => o.Id)
+    .Take(OrdersPerPageMax + 1)
+    .ToListAsync(ct);
+
+var hasMore = orders.Count > OrdersPerPageMax;
+```
+
+The extra row tells you the limit was hit. You can page, or you can fail loudly. Both beat silently loading 80,000 rows into memory.
+
+Caches get a `SizeLimit`. Once you set one, every entry has to declare a `Size`, or `MemoryCache` throws. That's annoying for about a day. Then you realise it forced you to think about what an entry costs, which was the whole point.
+
+Outbound HTTP gets a connection cap:
+
+```csharp
+services.AddHttpClient<InventoryClient>()
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+    {
+        MaxConnectionsPerServer = 32,
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+    });
+```
+
+One naming habit from TigerStyle helps here. Put units and qualifiers last: `latency_ms_max`, not `max_latency_ms`. In C# that's `LatencyMsMax` or `OrdersPerPageMax`. It looks odd for a week. After that, related names line up when sorted, and nobody has to guess whether `timeout` means seconds or milliseconds. (`TimeSpan` solves the unit. You still want the `Max`.)
+
+## A limit is a number you calculate
+
+The usual way to pick a bound is to type `1000` and move on. It feels big and safe, and nobody can tell you where it came from.
+
+TigerStyle asks for back-of-the-envelope sketches across four resources: network, disk, memory, and CPU. "Sketches are cheap." For a queue, the sketch fits in a paragraph.
+
+A queue exists to absorb short bursts. Its depth limit decides how long the last item in it waits. Say your consumer drains 400 items a second, and an item that waits longer than 2 seconds is no longer useful. Then the queue can hold 800 items. Item 801 is late the moment it arrives.
+
+```
+queueDepthMax = drainRatePerSecond × waitBudgetSeconds
+              = 400 × 2
+              = 800
+```
+
+Now check memory. At around 2 KB per item, 800 items is about 1.6 MB. Fine. If each item carried 5 MB of payload, you'd learn right now that the queue should hold references, not payloads. That's a design decision, and you made it before writing the consumer.
+
+Little's Law gives you the same relationship from the other side. In a stable system, the average number of items inside equals the arrival rate times the average time each item spends there (L = λW). That makes it a good diagnostic. If your dashboard shows an average depth of 6,000 and you process 400 a second, items are sitting in that queue for 15 seconds. You don't need distributed tracing to know that's wrong.
+
+The sketch also tells you what the queue can't do. If 600 items a second arrive and 400 drain, an 800-deep queue fills in 4 seconds. That's all it buys you. No queue in front of a slow consumer fixes a sustained overload. The bound only makes sure you find out in 4 seconds instead of 40 hours.
+
+{/* INTERACTIVE: limit calculator. Inputs: drain rate, wait budget, item size, arrival rate. Outputs: queueDepthMax, memory ceiling, time-to-full under overload, and a generated BoundedChannelOptions snippet to copy. */}
+
+## Decide what happens at the limit
+
+A bound without a decision about what happens when it's full is half a decision. `BoundedChannelOptions` makes you pick one of four:
+
+- `Wait`: the writer waits until there's space. This is backpressure.
+- `DropOldest`: remove the oldest item in the channel to make room.
+- `DropNewest`: remove the newest item already in the channel.
+- `DropWrite`: drop the item being written.
+
+```csharp
+var channel = Channel.CreateBounded<TelemetryEvent>(
+    new BoundedChannelOptions(TelemetryQueueDepthMax)
+    {
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+    },
+    itemDropped: _ => telemetryDropped.Add(1));
+```
+
+The `itemDropped` callback matters. A drop you don't count is a drop you'll never hear about. Wire it to a metric and alert on it.
+
+These look like technical settings. They're business decisions. Can you lose a telemetry sample? Usually, yes, and `DropOldest` keeps the freshest data. Can you lose an order? No. So orders get `Wait`, and the question moves upstream: what does the producer do while it waits?
+
+This is the part people miss about backpressure. It doesn't remove the queue. It moves it. If your HTTP endpoint awaits a full channel, requests pile up in Kestrel instead. Then in the thread pool, the socket backlog, the load balancer, and eventually in somebody else's retry loop. Backpressure only works if something at the edge of your system has a limit and is willing to say no.
+
+In ASP.NET Core, the rate limiting middleware can be that edge:
+
+```csharp
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddConcurrencyLimiter("ingest", limiter =>
+    {
+        limiter.PermitLimit = 64;
+        limiter.QueueLimit = 0;
+    });
+});
+
+app.UseRateLimiter();
+
+app.MapPost("/telemetry", IngestTelemetry)
+   .RequireRateLimiting("ingest");
+```
+
+Request 65 gets an immediate 503. That's a feature. The client knows right away and can back off. The alternative is a 30-second hang that tells it nothing.
+
+{/* INTERACTIVE: queue simulator (centrepiece). Sliders for producer rate and consumer rate. Toggle unbounded vs bounded, pick a FullMode. Live readouts: queue depth, memory, item latency, dropped count. Label clearly as a model, not a measurement. */}
+
+## Retries need a budget too
+
+A retry policy with a maximum attempt count looks bounded. Per call, it is. Across a call chain, it multiplies.
+
+Take a gateway that calls an orders service, which calls an inventory service, which calls a database. Each hop uses the standard resilience handler: the first try plus three retries, so up to four attempts. When the database is struggling, one click at the top can turn into 4 × 4 × 4 = 64 calls at the bottom. The dependency that's already in trouble now gets 64 times the load from the same user. The retries meant to help it are what keeps it down.
+
+A few rules keep this in check:
+
+- **Retry at one layer.** Usually the one closest to the failure. Not every hop.
+- **Budget the whole request, not just each attempt.** The standard handler's 30-second total timeout does this at one hop. Pass the deadline down so inner layers stop when the caller has given up. In .NET, that's the `CancellationToken`. Flowing it everywhere is the cheapest limit you'll ever add.
+- **Cap retries as a share of traffic.** Google's SRE book describes a [per-client retry budget](https://sre.google/sre-book/handling-overload/): only retry while retries stay below about 10% of requests. When most calls are failing, retries stop and the dependency gets room to recover.
+- **Add jitter.** A thousand clients shouldn't retry in the same millisecond. The standard handler uses exponential backoff with jitter by default. Keep it that way.
+
+One more. A retry is a duplicate request. If the operation isn't idempotent, retrying a `POST` is how a customer gets charged twice. The standard handler can skip unsafe methods with `options.Retry.DisableForUnsafeHttpMethods()`. Use it, unless the endpoint on the other side is built as an [idempotent consumer](/periodic-table-of-software-architecture/).
+
+{/* INTERACTIVE: retry amplification visualizer. Inputs: layers, attempts per layer, failure rate. Shows one request fanning out into a call tree. Toggle "single layer + total budget + jitter" to watch the tree collapse. */}
+
+## Assertions that survive a Release build
+
+TigerStyle asks for an average of at least two assertions per function. It wants you to assert "the positive space that you do expect AND to assert the negative space that you do not expect." And it separates two kinds of failure. A timeout is an operating error: expected, handled, retried. A batch with a negative length is a bug. On bugs, the document is blunt: "The only correct way to handle corrupt code is to crash."
+
+.NET's built-in tool for this works against you. `Debug.Assert` is marked `[Conditional("DEBUG")]`, so the compiler removes every call in a Release build. Your assertions protect your laptop and vanish in production, the one place where a failure would actually tell you something.
+
+Guard clauses cover the edges. Since .NET 8 there's a whole family of them:
+
+```csharp
+ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
+ArgumentOutOfRangeException.ThrowIfGreaterThan(batchSize, BatchSizeMax);
+```
+
+Those check input. For internal invariants, write a small helper that stays in Release:
+
+```csharp
+public static class Invariant
+{
+    public static void Check(
+        [DoesNotReturnIf(false)] bool condition,
+        [CallerArgumentExpression(nameof(condition))] string? expression = null)
+    {
+        if (!condition)
+        {
+            throw new InvariantViolationException($"Invariant failed: {expression}");
+        }
+    }
+}
+```
+
+`DoesNotReturnIf(false)` tells the compiler's flow analysis that the condition holds after the call. `CallerArgumentExpression` puts the failing expression in the message, so you get `Invariant failed: _count <= _buffer.Length` instead of a bare line number.
+
+Here's what positive and negative space look like in practice:
+
+```csharp
+private void Append(ReadOnlySpan<Reading> readings)
+{
+    // Positive space: what must be true.
+    Invariant.Check(readings.Length <= BatchSizeMax);
+    Invariant.Check(_count + readings.Length <= _buffer.Length);
+
+    // Negative space: what must never happen.
+    Invariant.Check(readings.IsEmpty || readings[0].Timestamp >= _lastTimestamp);
+
+    readings.CopyTo(_buffer.AsSpan(_count));
+    _count += readings.Length;
+
+    Invariant.Check(_count <= _buffer.Length);
+}
+```
+
+TigerStyle also asks for paired assertions: check the same property on two different code paths. Validate a record's checksum before you write it and again after you read it back. A bug on either side trips one of them.
+
+Then there's the question of throwing versus crashing. In ASP.NET Core, a thrown exception becomes a 500 and the process keeps serving. That's right when the broken invariant is local to one request. When it guards shared state, like a buffer, a cache, or an in-memory index, the next request runs on corrupt data. For those, `Environment.FailFast` is the TigerStyle answer. Kill the process, let the orchestrator restart it, and keep the crash dump. It feels drastic. It's less drastic than serving wrong answers until someone notices.
+
+Two assertions per function is a database number. For a typical service I'd aim lower, but put them where state changes hands: queue boundaries, parsers, and anything that does index arithmetic.
+
+## Allocate at startup, as far as .NET lets you
+
+TigerStyle says "all memory must be statically allocated at startup," with no allocation after initialization. TigerBeetle can do that because it controls every byte. A .NET service can't. The GC, ASP.NET Core, and your serializer allocate whether you like it or not.
+
+You can still move the hot path in that direction. The limits you calculated earlier already tell you how much memory you need. Your queue depth max times your item size max is a buffer you can allocate once, at startup, and reuse.
+
+Pools help, and they want limits too:
+
+```csharp
+private static readonly ArrayPool<byte> FramePool = ArrayPool<byte>.Create(
+    maxArrayLength: FrameBytesMax,
+    maxArraysPerBucket: FramesInFlightMax);
+```
+
+Look at the constructor. Even the tool for avoiding allocations asks you for two bounds. Be honest about what it guarantees, though. Ask for an array larger than `maxArrayLength`, or rent when the bucket is empty, and you get a fresh allocation. A pool means "mostly allocated up front", not "static".
+
+Measure it instead of believing it. BenchmarkDotNet's `[MemoryDiagnoser]` shows bytes allocated per operation. `dotnet-counters` shows allocation rate and GC pause time on a running service.
+
+{/* TODO: BenchmarkDotNet results comparing per-request allocation vs a preallocated/pooled buffer. Real numbers only. */}
+
+## Where I wouldn't bother
+
+Limits cost something. You pick a number, you pick what happens at it, you test both, and someone has to understand all of it later. An internal admin screen with a dozen users doesn't need a calculated queue depth. A prototype doesn't need `Environment.FailFast`.
+
+Spend limits where load comes from outside your control: public endpoints, message consumers, anything that fans out, anything that caches per key. Spend them on hot paths too, where a small leak per call becomes a large one per day.
+
+And test them. A limit nobody has tested is a guess written down as a constant. Write the test that fills the queue to its bound and checks what happens at bound plus one. If the overflow path has never run, you don't know what it does.
+
+## A checklist to take back to your team
+
+- Every queue and channel has a capacity, and a full mode someone chose on purpose.
+- Every dropped item is counted and alerted on.
+- Every cache has a size limit.
+- Every fan-out has a maximum degree of parallelism.
+- Every query that can return many rows has a `Take`.
+- Every outbound HTTP client has a connection cap and a total time budget.
+- Retries happen at one layer, inside a total budget, with jitter, and never on non-idempotent calls.
+- The edge of the system rejects work it can't handle, quickly.
+- Invariants are still checked in Release builds.
+- Every limit is a calculated number, named with its unit and the word `Max`.
+- Every limit has a test for what happens one past it.
+
+None of this is new. TigerBeetle just wrote it down in one place and refused to make exceptions. You don't have to go that far. Find the queue that would hurt most if it grew all weekend, and give it a number.
