@@ -22,9 +22,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   },
-  "pnpm": {
-    "overrides": {
-      "postcss-selector-parser": "7.1.6"
-    }
+  "overrides": {
+    "postcss-selector-parser": "7.1.6"
   }
 }
