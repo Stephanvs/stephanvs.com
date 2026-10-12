@@ -7,6 +7,11 @@ tags: ["dotnet", "architecture", "resilience", "tigerstyle"]
 image: ./cover.webp
 ---
 
+import UnboundedAudit from '../../../src/components/limits/UnboundedAudit.astro';
+import QueueDepthCalculator from '../../../src/components/limits/QueueDepthCalculator.astro';
+import QueueSimulator from '../../../src/components/limits/QueueSimulator.astro';
+import RetryAmplification from '../../../src/components/limits/RetryAmplification.astro';
+
 Picture a telemetry endpoint. It accepts an event, drops it into a channel, and returns `202 Accepted`. A hosted service reads from the channel and writes to the database. It's clean and it's fast. It passes every test.
 
 ```csharp
@@ -39,22 +44,11 @@ The first one does most of the work. In their words, "all loops and all queues m
 
 .NET isn't careless about limits. Some defaults are good. `System.Text.Json` refuses to read past a nesting depth of 64. Kestrel rejects request bodies over about 30 MB. The standard resilience handler in `Microsoft.Extensions.Http.Resilience` caps a request at 30 seconds in total. Somebody thought hard about those.
 
-Other places are wide open.
+Other places are wide open. The list below has both kinds, so you can compare.
 
-| API | Default | What happens under load |
-|---|---|---|
-| `Channel.CreateUnbounded<T>()` | No limit | Grows until the process dies |
-| `ConcurrentQueue<T>` | No limit | Same |
-| `MemoryCache` | `SizeLimit` is null | Grows with your key space |
-| `SocketsHttpHandler.MaxConnectionsPerServer` | `int.MaxValue` | A slow dependency gets more connections, which makes it slower |
-| `HttpClient.Timeout` | 100 seconds | Technically a limit, rarely the one you want |
-| Kestrel `MaxConcurrentConnections` | null | Accepts connections until something else gives |
-| `Task.WhenAll(items.Select(...))` | One task per item | Your input decides your concurrency |
-| EF Core `ToListAsync()` without `Take` | The whole result | One large customer becomes one large allocation |
+<UnboundedAudit />
 
 The framework teams clearly believe in limits. They just couldn't set them everywhere, because they don't know your traffic. That part is yours.
-
-{/* INTERACTIVE: clickable audit table. Click an API to reveal its default, the failure mode, a recommended bound, and a code fix. Optional: copyable grep/Roslyn snippet to scan your own codebase. */}
 
 Most of the fixes are small.
 
@@ -116,7 +110,7 @@ Little's Law gives you the same relationship from the other side. In a stable sy
 
 The sketch also tells you what the queue can't do. If 600 items a second arrive and 400 drain, an 800-deep queue fills in 4 seconds. That's all it buys you. No queue in front of a slow consumer fixes a sustained overload. The bound only makes sure you find out in 4 seconds instead of 40 hours.
 
-{/* INTERACTIVE: limit calculator. Inputs: drain rate, wait budget, item size, arrival rate. Outputs: queueDepthMax, memory ceiling, time-to-full under overload, and a generated BoundedChannelOptions snippet to copy. */}
+<QueueDepthCalculator />
 
 ## Decide what happens at the limit
 
@@ -141,7 +135,11 @@ The `itemDropped` callback matters. A drop you don't count is a drop you'll neve
 
 These look like technical settings. They're business decisions. Can you lose a telemetry sample? Usually, yes, and `DropOldest` keeps the freshest data. Can you lose an order? No. So orders get `Wait`, and the question moves upstream: what does the producer do while it waits?
 
-This is the part people miss about backpressure. It doesn't remove the queue. It moves it. If your HTTP endpoint awaits a full channel, requests pile up in Kestrel instead. Then in the thread pool, the socket backlog, the load balancer, and eventually in somebody else's retry loop. Backpressure only works if something at the edge of your system has a limit and is willing to say no.
+Try it below. The first scenario is the Friday night from the top of this post. Then switch to a bounded channel and compare the full modes.
+
+<QueueSimulator />
+
+The `Wait` scenario shows the part people miss about backpressure. It doesn't remove the queue. It moves it. If your HTTP endpoint awaits a full channel, requests pile up in Kestrel instead. Then in the thread pool, the socket backlog, the load balancer, and eventually in somebody else's retry loop. Backpressure only works if something at the edge of your system has a limit and is willing to say no.
 
 In ASP.NET Core, the rate limiting middleware can be that edge:
 
@@ -163,13 +161,15 @@ app.MapPost("/telemetry", IngestTelemetry)
 
 Request 65 gets an immediate 503. That's a feature. The client knows right away and can back off. The alternative is a 30-second hang that tells it nothing.
 
-{/* INTERACTIVE: queue simulator (centrepiece). Sliders for producer rate and consumer rate. Toggle unbounded vs bounded, pick a FullMode. Live readouts: queue depth, memory, item latency, dropped count. Label clearly as a model, not a measurement. */}
-
 ## Retries need a budget too
 
 A retry policy with a maximum attempt count looks bounded. Per call, it is. Across a call chain, it multiplies.
 
 Take a gateway that calls an orders service, which calls an inventory service, which calls a database. Each hop uses the standard resilience handler: the first try plus three retries, so up to four attempts. When the database is struggling, one click at the top can turn into 4 × 4 × 4 = 64 calls at the bottom. The dependency that's already in trouble now gets 64 times the load from the same user. The retries meant to help it are what keeps it down.
+
+Move the sliders to see how fast that grows. Then switch to a single retrying hop with a budget.
+
+<RetryAmplification />
 
 A few rules keep this in check:
 
@@ -178,9 +178,7 @@ A few rules keep this in check:
 - **Cap retries as a share of traffic.** Google's SRE book describes a [per-client retry budget](https://sre.google/sre-book/handling-overload/): only retry while retries stay below about 10% of requests. When most calls are failing, retries stop and the dependency gets room to recover.
 - **Add jitter.** A thousand clients shouldn't retry in the same millisecond. The standard handler uses exponential backoff with jitter by default. Keep it that way.
 
-One more. A retry is a duplicate request. If the operation isn't idempotent, retrying a `POST` is how a customer gets charged twice. The standard handler can skip unsafe methods with `options.Retry.DisableForUnsafeHttpMethods()`. Use it, unless the endpoint on the other side is built as an [idempotent consumer](/periodic-table-of-software-architecture/).
-
-{/* INTERACTIVE: retry amplification visualizer. Inputs: layers, attempts per layer, failure rate. Shows one request fanning out into a call tree. Toggle "single layer + total budget + jitter" to watch the tree collapse. */}
+One more. A retry is a duplicate request. If the operation isn't idempotent, retrying a `POST` is how a customer gets charged twice. The standard handler can skip unsafe methods with `options.Retry.DisableForUnsafeHttpMethods()`. Use it, unless the endpoint on the other side is built as an [idempotent consumer](/periodic-table-of-software-architecture/#element-ic).
 
 ## Assertions that survive a Release build
 
