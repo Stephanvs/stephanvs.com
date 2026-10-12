@@ -11,15 +11,20 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/mdx": "^7.0.3",
-    "astro": "^7.1.2",
-    "sharp": "^0.35.3"
+    "@astrojs/mdx": "^8.0.3",
+    "astro": "^7.3.8",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.9",
+    "@astrojs/check": "^0.9.10",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss-selector-parser": "7.1.6"
+    }
   }
 }
