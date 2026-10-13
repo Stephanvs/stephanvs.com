@@ -18,37 +18,37 @@ const works = (await getCollection("work")).slice(0, 2);
 ---
 
 <Layout title="Home" description={home.data.excerpt}>
-    <section class="grid gap-12 border-b border-stone-900 py-16 md:py-24 lg:grid-cols-4 lg:items-end lg:gap-16 lg:py-32">
+    <section class="grid gap-12 border-b border-line py-16 md:py-24 lg:grid-cols-4 lg:items-end lg:gap-16 lg:py-32">
         <div class="lg:col-span-3">
-            <p class="font-mono text-xs uppercase tracking-widest text-orange-700">
+            <p class="font-mono text-xs uppercase tracking-widest text-accent">
                 Independent software architect &rarr; Netherlands
             </p>
             <h1 class="mt-5 max-w-5xl font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">{home.data.title}</h1>
-            <p class="mt-7 max-w-3xl text-xl leading-relaxed text-stone-700 md:text-2xl">{home.data.excerpt}</p>
+            <p class="mt-7 max-w-3xl text-xl leading-relaxed text-muted md:text-2xl">{home.data.excerpt}</p>
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a class="inline-flex justify-center border border-stone-900 bg-stone-900 px-4 py-3 font-mono text-xs uppercase tracking-wide text-stone-100 no-underline transition-colors hover:border-orange-700 hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700" href="/work"
+                <a class="inline-flex justify-center border border-fill bg-fill px-4 py-3 font-mono text-xs uppercase tracking-wide text-fill-ink no-underline transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" href="/work"
                     >View selected work</a
                 >
-                <a class="inline-flex justify-center border border-stone-900 px-4 py-3 font-mono text-xs uppercase tracking-wide no-underline transition-colors hover:border-orange-700 hover:bg-orange-700 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700" href="mailto:stephan@hayman.io"
+                <a class="inline-flex justify-center border border-line px-4 py-3 font-mono text-xs uppercase tracking-wide no-underline transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" href="mailto:stephan@hayman.io"
                     >Start a conversation</a
                 >
             </div>
         </div>
-        <aside class="border-t border-stone-900 pt-4 lg:col-start-4">
+        <aside class="border-t border-line pt-4 lg:col-start-4">
             <Image
                 src={avatar}
                 alt="Portrait of Stephan van Stekelenburg"
-                class="mb-4 aspect-square w-full max-w-60 object-cover grayscale contrast-125"
+                class="mb-4 aspect-square w-full max-w-60 border border-line bg-raised object-cover grayscale contrast-125"
             />
-            <p class="text-sm leading-relaxed text-stone-600">
+            <p class="text-sm leading-relaxed text-quiet">
                 Architecture should make change less expensive, not merely make
                 diagrams more impressive.
             </p>
         </aside>
     </section>
 
-    <section class="grid gap-8 border-b border-stone-900 py-16 lg:grid-cols-3 lg:gap-16 lg:py-20">
-        <p class="font-mono text-xs uppercase tracking-widest text-orange-700">Approach / 01</p>
+    <section class="grid gap-8 border-b border-line py-16 lg:grid-cols-3 lg:gap-16 lg:py-20">
+        <p class="font-mono text-xs uppercase tracking-widest text-accent">Approach / 01</p>
         <div class="prose prose-stone max-w-none font-serif text-2xl leading-relaxed lg:col-span-2 lg:text-3xl"><Content /></div>
     </section>
 
@@ -58,7 +58,7 @@ const works = (await getCollection("work")).slice(0, 2);
         href="/blog"
         linkText="All writing"
     />
-    <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
+    <div class="grid grid-cols-1 border-t border-line md:grid-cols-2 md:gap-x-8">
         {
             posts.map((post) => (
                 <Card
@@ -78,7 +78,7 @@ const works = (await getCollection("work")).slice(0, 2);
         href="/work"
         linkText="All work"
     />
-    <div class="grid grid-cols-1 border-t border-stone-900 md:grid-cols-2 md:gap-x-8">
+    <div class="grid grid-cols-1 border-t border-line md:grid-cols-2 md:gap-x-8">
         {
             works.map((item) => (
                 <Card
@@ -98,8 +98,8 @@ const works = (await getCollection("work")).slice(0, 2);
         href="/popcorn/"
         linkText="Support and connection help"
     />
-    <div class="max-w-3xl border-t border-stone-900 pt-6 text-lg leading-relaxed text-stone-700">
+    <div class="max-w-3xl border-t border-line pt-6 text-lg leading-relaxed text-muted">
         <p>Check TeamCity Cloud builds, read logs, and start or cancel builds from iPhone or iPad.</p>
-        <p class="mt-4">For help, email <a class="underline decoration-orange-700 underline-offset-4 hover:text-orange-700" href="mailto:support@stephanvs.com">support@stephanvs.com</a>.</p>
+        <p class="mt-4">For help, email <a class="underline decoration-accent underline-offset-4 hover:text-accent" href="mailto:support@stephanvs.com">support@stephanvs.com</a>.</p>
     </div>
 </Layout>
