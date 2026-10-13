@@ -10,16 +10,27 @@ A personal website built with Astro, TypeScript, and content collections.
 
 ## Development
 
+Use Bun 1.4.3, as recorded in `package.json`.
+
 ```bash
-pnpm install
-pnpm dev
+bun install --frozen-lockfile
+bun run dev
 ```
 
 ## Build
 
 ```bash
-pnpm build
+bun run build
 ```
+
+## Cloudflare Pages
+
+Set `BUN_VERSION` to `1.4.3` in the Pages project's environment variables for both production and preview builds.
+Set the build command to `bun run build` and the output directory to `dist`.
+
+Cloudflare's default Bun 1.2.15 cannot read the version-2 `bun.lock`.
+The `packageManager` field records the version for local development; Cloudflare requires the environment variable to override its Bun version.
+See the [Cloudflare build image documentation](https://developers.cloudflare.com/pages/configuration/build-image/).
 
 ## Content
 

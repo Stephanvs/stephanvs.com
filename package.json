@@ -2,6 +2,7 @@
   "name": "stephanvs.com",
   "type": "module",
   "private": true,
+  "packageManager": "bun@1.4.3",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
