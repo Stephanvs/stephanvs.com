@@ -1,2 +1,131 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+/*
+  The page follows the browser scheme. `color-scheme` switches native
+  controls, scrollbars, and the canvas; the tokens below switch our own UI.
+*/
+:root {
+	color-scheme: light;
+	--site-canvas: var(--color-stone-100);
+	--site-ink: var(--color-stone-900);
+	--site-muted: var(--color-stone-700);
+	--site-quiet: var(--color-stone-600);
+	--site-faint: var(--color-stone-500);
+	--site-line: var(--color-stone-900);
+	--site-line-soft: var(--color-stone-300);
+	--site-surface: var(--color-stone-200);
+	--site-raised: var(--color-stone-50);
+	--site-accent: var(--color-orange-700);
+	--site-accent-ink: var(--color-stone-100);
+	--site-fill: var(--color-stone-900);
+	--site-fill-ink: var(--color-stone-100);
+	--site-copy: var(--color-stone-800);
+	--site-selection: var(--color-orange-200);
+	--site-selection-ink: var(--color-stone-900);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		color-scheme: dark;
+		--site-canvas: var(--color-stone-950);
+		--site-ink: var(--color-stone-100);
+		--site-muted: var(--color-stone-300);
+		--site-quiet: var(--color-stone-400);
+		--site-faint: var(--color-stone-400);
+		--site-line: var(--color-stone-200);
+		--site-line-soft: var(--color-stone-700);
+		--site-surface: var(--color-stone-800);
+		--site-raised: var(--color-stone-900);
+		--site-accent: var(--color-orange-400);
+		--site-accent-ink: var(--color-stone-950);
+		--site-fill: var(--color-stone-100);
+		--site-fill-ink: var(--color-stone-950);
+		--site-copy: var(--color-stone-200);
+		--site-selection: var(--color-orange-900);
+		--site-selection-ink: var(--color-orange-50);
+	}
+}
+
+@theme inline {
+	--color-canvas: var(--site-canvas);
+	--color-ink: var(--site-ink);
+	--color-muted: var(--site-muted);
+	--color-quiet: var(--site-quiet);
+	--color-faint: var(--site-faint);
+	--color-line: var(--site-line);
+	--color-line-soft: var(--site-line-soft);
+	--color-surface: var(--site-surface);
+	--color-raised: var(--site-raised);
+	--color-accent: var(--site-accent);
+	--color-accent-ink: var(--site-accent-ink);
+	--color-fill: var(--site-fill);
+	--color-fill-ink: var(--site-fill-ink);
+	--color-copy: var(--site-copy);
+	--color-selection: var(--site-selection);
+	--color-selection-ink: var(--site-selection-ink);
+}
+
+html {
+	background-color: var(--site-canvas);
+	color: var(--site-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+	.prose {
+		--tw-prose-body: var(--site-muted);
+		--tw-prose-headings: var(--site-ink);
+		--tw-prose-lead: var(--site-quiet);
+		--tw-prose-links: var(--site-ink);
+		--tw-prose-bold: var(--site-ink);
+		--tw-prose-counters: var(--site-faint);
+		--tw-prose-bullets: var(--site-line-soft);
+		--tw-prose-hr: var(--site-line-soft);
+		--tw-prose-quotes: var(--site-ink);
+		--tw-prose-quote-borders: var(--site-accent);
+		--tw-prose-captions: var(--site-faint);
+		--tw-prose-kbd: var(--site-ink);
+		--tw-prose-kbd-shadows: color-mix(in srgb, var(--site-ink) 16%, transparent);
+		--tw-prose-code: var(--site-ink);
+		--tw-prose-pre-code: var(--site-muted);
+		--tw-prose-pre-bg: var(--site-surface);
+		--tw-prose-th-borders: var(--site-line-soft);
+		--tw-prose-td-borders: var(--site-line-soft);
+	}
+}
+
+.prose :where(code):not(:where(pre code)) {
+	background-color: var(--site-surface);
+	padding: 0.125em 0.3em;
+	font-weight: 500;
+}
+
+.prose :where(code):not(:where(pre code))::before,
+.prose :where(code):not(:where(pre code))::after {
+	content: none;
+}
+
+.prose :where(pre) {
+	border: 1px solid var(--site-line);
+}
+
+/*
+  Frame photos, screenshots, and embeds so a light image stays edged on a
+  dark page and a dark image does not disappear into the canvas.
+*/
+.prose :where(img),
+.prose :where(iframe) {
+	border: 1px solid var(--site-line);
+	background-color: var(--site-raised);
+}
+
+@media (prefers-color-scheme: dark) {
+	.astro-code,
+	.astro-code span {
+		color: var(--shiki-dark) !important;
+		background-color: var(--shiki-dark-bg) !important;
+		font-style: var(--shiki-dark-font-style) !important;
+		font-weight: var(--shiki-dark-font-weight) !important;
+		text-decoration: var(--shiki-dark-text-decoration) !important;
+	}
+}

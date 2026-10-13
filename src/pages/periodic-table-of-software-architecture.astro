@@ -36,16 +36,16 @@ const series = [
 <Layout title={post.title} description={post.excerpt}>
     <article class="py-12 lg:py-20">
         <header class="max-w-4xl">
-            <p class="font-mono text-xs uppercase tracking-widest text-orange-700">
+            <p class="font-mono text-xs uppercase tracking-widest text-accent">
                 Interactive reference
             </p>
             <h1 class="mt-5 font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl">
                 {post.title}
             </h1>
-            <span class="mt-6 block font-mono text-xs uppercase tracking-wide text-stone-600">
+            <span class="mt-6 block font-mono text-xs uppercase tracking-wide text-quiet">
                 {formatDate(post.date)} · architecture, patterns
             </span>
-            <div class="prose prose-stone mt-8 max-w-3xl md:prose-lg prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700">
+            <div class="prose prose-stone mt-8 max-w-3xl md:prose-lg prose-a:decoration-accent prose-a:underline-offset-4 prose-a:hover:text-accent">
                 <p>
                     Alёna Batitskaia's{" "}
                     <a href="https://blog.alena.rocks/en/artifacts/html-elements">
@@ -286,7 +286,7 @@ const series = [
                 >
                     Common compounds
                 </h2>
-                <p class="mt-6 text-lg leading-relaxed text-stone-700">
+                <p class="mt-6 text-lg leading-relaxed text-muted">
                     Elements rarely appear alone. These are combinations that
                     show up again and again, and they are stable because each
                     element covers a weakness of another. Select one to light it
@@ -339,7 +339,7 @@ const series = [
                 >
                     All elements
                 </h2>
-                <p class="mt-6 text-lg leading-relaxed text-stone-700">
+                <p class="mt-6 text-lg leading-relaxed text-muted">
                     Every entry, grouped by family, if you'd rather read than
                     click.
                 </p>
@@ -347,11 +347,11 @@ const series = [
             <div class="mt-10 max-w-4xl">
                 {categories.map((category) => (
                     <div class="pt-index-group">
-                        <div class="mb-2 flex items-baseline justify-between gap-4 border-b border-stone-900 pb-3">
+                        <div class="mb-2 flex items-baseline justify-between gap-4 border-b border-line pb-3">
                             <h3 class="font-serif text-2xl tracking-tight">
                                 {category.name}
                             </h3>
-                            <p class="text-right text-sm text-stone-600">
+                            <p class="text-right text-sm text-quiet">
                                 {category.blurb}
                             </p>
                         </div>
@@ -395,7 +395,7 @@ const series = [
                                             </div>
                                         </dl>
                                         <div>
-                                            <p class="mb-2 font-mono text-xs uppercase tracking-widest text-stone-600">
+                                            <p class="mb-2 font-mono text-xs uppercase tracking-widest text-quiet">
                                                 Complexity cost:{" "}
                                                 {costLabels[element.cost]} ·
                                                 Related
@@ -429,7 +429,7 @@ const series = [
             </div>
         </section>
 
-        <section class="mt-20 max-w-3xl border-t border-stone-900 pt-8">
+        <section class="mt-20 max-w-3xl border-t border-line pt-8">
             <div class="prose prose-stone md:prose-lg">
                 <p>
                     No table like this is complete, and the placement is
