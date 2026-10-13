@@ -1,6 +1,7 @@
 import type { ImageMetadata } from 'astro';
 import { getCollection } from 'astro:content';
 import periodicTablePreview from '../assets/periodic-table-of-software-architecture.png';
+import languageSpectrumPreview from '../assets/periodic-table-of-software-architecture.png';
 
 export interface PostSummary {
   href: string;
@@ -16,6 +17,14 @@ export const periodicTablePost: PostSummary = {
   excerpt: 'Ninety-two architectural patterns, principles, and practices arranged as a periodic table you can explore.',
   date: new Date('2026-10-12'),
   image: periodicTablePreview
+};
+
+export const languageSpectrumPost: PostSummary = {
+  href: '/grand-programming-languages-spectrum/',
+  title: 'The Grand Programming Languages Spectrum',
+  excerpt: 'Twenty-five languages scored on eleven facets and cross-checked against seven popularity rankings, with charts you can explore.',
+  date: new Date('2026-10-12'),
+  image: languageSpectrumPreview
 };
 
 export function contentSlug(id: string) {
@@ -39,5 +48,5 @@ export async function getPostSummaries(): Promise<PostSummary[]> {
     image: post.data.image
   }));
 
-  return [...posts, periodicTablePost].sort((a, b) => b.date.getTime() - a.date.getTime());
+  return [...posts, languageSpectrumPost, periodicTablePost].sort((a, b) => b.date.getTime() - a.date.getTime());
 }

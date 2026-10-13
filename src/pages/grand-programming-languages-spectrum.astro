@@ -1,0 +1,1234 @@
+---
+import { Code } from 'astro:components';
+import LanguageTile from '../components/LanguageTile.astro';
+import Layout from '../layouts/Layout.astro';
+import {
+    ancestors,
+    consensusRank,
+    domainLabels,
+    facets,
+    families,
+    formatSourceRank,
+    getFamily,
+    getLanguage,
+    influenceName,
+    languages,
+    lenses,
+    lensValue,
+    mapViews,
+    matchups,
+    memoryLabels,
+    popularitySources,
+    projects,
+    runtimeLabels,
+    sourcePlaces,
+    typingLabels,
+    weightLabels,
+    type FamilyKey,
+    type Language,
+    type Lens,
+    type LensKey,
+} from '../data/programming-languages';
+import { lineCount, profiles, sharedTask } from '../data/programming-language-profiles';
+import { formatDate, languageSpectrumPost as post } from '../lib/content';
+import { relax, swarm } from '../lib/spectrum-layout';
+import '../styles/language-spectrum.css';
+
+const colors = (family: FamilyKey) => {
+    const { fill, ink } = getFamily(family);
+    return `--fill:${fill};--ink:${ink}`;
+};
+const rankOf = (language: Language) => consensusRank.get(language.id)!;
+const byFamily = families.map((family) => ({
+    family,
+    members: languages.filter((language) => language.family === family.key).sort((a, b) => a.year - b.year),
+}));
+const byPopularity = [...languages].sort((a, b) => rankOf(a) - rankOf(b));
+const lensByKey = new Map(lenses.map((lens) => [lens.key, lens]));
+const lens = (key: LensKey) => lensByKey.get(key)!;
+const fraction = (target: Lens, language: Language) => (lensValue(target.key, language) - target.min) / (target.max - target.min);
+const tickPercent = (target: Lens, tick: number) => ((tick - target.min) / (target.max - target.min)) * 100;
+
+// Spectrum: rendered for the default lens, re-laid out in the browser at the real width.
+const defaultLens = lens('performance');
+const swarmLayout = swarm(
+    languages.map((language) => ({ id: language.id, x: fraction(defaultLens, language) * 100, priority: rankOf(language) })),
+    1100,
+    46,
+);
+const swarmLevels = Math.max(...[...swarmLayout.values()].map((placement) => placement.level)) + 1;
+
+// Trade-off map: same idea, two axes.
+const defaultView = mapViews[0];
+const plot = { width: 1000, height: 620, spacing: 40 };
+const mapLayout = relax(
+    languages.map((language) => ({
+        id: language.id,
+        x: fraction(lens(defaultView.x), language) * plot.width,
+        y: (1 - fraction(lens(defaultView.y), language)) * plot.height,
+    })),
+    plot.width,
+    plot.height,
+    plot.spacing,
+);
+
+// Rankings: one column per source, plus the consensus.
+const bumpColumns = [
+    ...popularitySources.map((source) => ({ key: source.key as string, label: source.short, edition: source.edition })),
+    { key: 'consensus', label: 'Consensus', edition: 'Average' },
+];
+const bump = { left: 24, right: 740, top: 60, row: 22, labelX: 758, width: 940 };
+const bumpX = (index: number) => bump.left + (index * (bump.right - bump.left)) / (bumpColumns.length - 1);
+const bumpY = (place: number) => bump.top + (place - 1) * bump.row;
+const unrankedY = bumpY(languages.length) + 40;
+const bumpHeight = unrankedY + 22;
+const bumpLines = byPopularity.map((language) => {
+    const points = bumpColumns.map((column, index) => {
+        if (column.key === 'consensus') {
+            const rank = rankOf(language);
+            return { x: bumpX(index), y: bumpY(rank), label: `#${rank}`, ranked: true };
+        }
+        const source = column.key as keyof typeof language.ranks;
+        const published = language.ranks[source];
+        return published === undefined
+            ? { x: bumpX(index), y: unrankedY, label: 'not ranked', ranked: false }
+            : { x: bumpX(index), y: bumpY(sourcePlaces[source].get(language.id)!), label: formatSourceRank(source, published), ranked: true };
+    });
+    const path = points
+        .map((point, index) => {
+            if (index === 0) return `M${point.x},${point.y}`;
+            const previous = points[index - 1];
+            const mid = (previous.x + point.x) / 2;
+            return `C${mid},${previous.y} ${mid},${point.y} ${point.x},${point.y}`;
+        })
+        .join(' ');
+    return { language, points, path };
+});
+const rankingStories = [
+    {
+        id: 'typescript',
+        title: 'TypeScript',
+        text: 'First on GitHub, 38th on TIOBE. Search-based indexes count searches, and people still search for “JavaScript” when they write TypeScript.',
+    },
+    {
+        id: 'c',
+        title: 'C',
+        text: 'Second on TIOBE, but outside GitHub’s top ten and tenth on RedMonk. C is searched for, taught and maintained far more than it is chosen for new projects.',
+    },
+    {
+        id: 'rust',
+        title: 'Rust',
+        text: 'Tenth on TIOBE and 12th in Stack Overflow’s usage, but only 20th on RedMonk and missing from GitHub’s top ten. Its reputation is running ahead of its footprint.',
+    },
+    {
+        id: 'kotlin',
+        title: 'Kotlin',
+        text: 'Used by 18% of developers in JetBrains’ survey, but 32nd on TIOBE. JetBrains created Kotlin, and its survey reaches people who use its tools.',
+    },
+    {
+        id: 'r',
+        title: 'R',
+        text: 'Fourth on PYPL and eighth on TIOBE, but 21st in Stack Overflow’s survey. Statisticians search for tutorials; they mostly don’t answer developer surveys.',
+    },
+    {
+        id: 'php',
+        title: 'PHP',
+        text: 'Fourth on RedMonk and sixth on GitHub, while its share of job postings fell from about 10% to 4% during 2025. An enormous installed base keeps it ranked long after new projects moved elsewhere.',
+    },
+];
+
+// Lineage: a timeline lane per family, with influence arcs.
+const lineage = { left: 30, right: 1070, start: 1955, end: 2019, top: 10, nodeHeight: 22, rowGap: 6, laneHead: 18, lanePad: 12, width: 1100 };
+const yearX = (year: number) => lineage.left + ((year - lineage.start) / (lineage.end - lineage.start)) * (lineage.right - lineage.left);
+const nodeWidth = (name: string) => Math.round(name.length * 6.8 + 16);
+const allNodes = [
+    ...ancestors.map((ancestor) => ({ ...ancestor, ancestor: true })),
+    ...languages.map(({ id, name, year, family }) => ({ id, name, year, family, ancestor: false })),
+];
+let laneY = lineage.top;
+const lanes = families.map((family) => {
+    const rows: number[] = [];
+    const nodes = allNodes
+        .filter((node) => node.family === family.key)
+        .sort((a, b) => a.year - b.year)
+        .map((node) => {
+            const width = nodeWidth(node.name);
+            const x = yearX(node.year) - width / 2;
+            let row = rows.findIndex((end) => end + 6 <= x);
+            if (row === -1) row = rows.push(0) - 1;
+            rows[row] = x + width;
+            return { ...node, x, width, row };
+        });
+    const y = laneY;
+    const height = lineage.laneHead + rows.length * (lineage.nodeHeight + lineage.rowGap) + lineage.lanePad;
+    laneY += height;
+    return {
+        family,
+        y,
+        height,
+        nodes: nodes.map((node) => ({ ...node, y: y + lineage.laneHead + node.row * (lineage.nodeHeight + lineage.rowGap) })),
+    };
+});
+const lineageHeight = laneY + 30;
+const nodeById = new Map(lanes.flatMap((lane) => lane.nodes).map((node) => [node.id, node]));
+const lineageEdges = languages.flatMap((language) =>
+    language.influences.map((from) => {
+        const source = nodeById.get(from)!;
+        const target = nodeById.get(language.id)!;
+        const start = { x: source.x + source.width, y: source.y + lineage.nodeHeight / 2 };
+        const end = { x: target.x, y: target.y + lineage.nodeHeight / 2 };
+        const reach = Math.max(40, Math.abs(end.x - start.x) / 2);
+        return { from, to: language.id, d: `M${start.x},${start.y} C${start.x + reach},${start.y} ${end.x - reach},${end.y} ${end.x},${end.y}` };
+    }),
+);
+const decades = [1960, 1970, 1980, 1990, 2000, 2010];
+
+// Matrix
+const heat = (score: number) => (score <= 2 ? 1 : score <= 4 ? 2 : score <= 6 ? 3 : score <= 8 ? 4 : 5);
+const descendants = (language: Language) => languages.filter((other) => other.influences.includes(language.id));
+const homeTurf = (language: Language) =>
+    Object.entries(language.domains)
+        .filter(([, fit]) => fit === 3)
+        .map(([domain]) => domainLabels[domain as keyof typeof domainLabels]);
+
+const sections = [
+    ['lineup', 'The lineup'],
+    ['spectrum', 'The spectrum'],
+    ['map', 'Trade-off map'],
+    ['rankings', 'Popularity'],
+    ['lineage', 'Family tree'],
+    ['compare', 'Head to head'],
+    ['choose', 'Choosing one'],
+    ['insights', 'What it shows'],
+    ['matrix', 'The matrix'],
+    ['profiles', 'Profiles'],
+    ['method', 'Method & sources'],
+];
+---
+
+<Layout title={post.title} description={post.excerpt}>
+    <article class="ls py-12 lg:py-20">
+        <header class="max-w-4xl">
+            <p class="font-mono text-xs uppercase tracking-widest text-orange-700">Interactive field guide</p>
+            <h1 class="mt-5 font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl">{post.title}</h1>
+            <span class="mt-6 block font-mono text-xs uppercase tracking-wide text-stone-600">
+                {formatDate(post.date)} · programming languages, data
+            </span>
+            <div class="prose prose-stone mt-8 max-w-3xl md:prose-lg prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700">
+                <p>
+                    Every few months someone publishes a ranking of programming languages, and every ranking tells a
+                    different story. TIOBE says C is the second most popular language in the world. GitHub says
+                    TypeScript is first. Stack Overflow’s survey says JavaScript, as it has for over a decade. They
+                    are all right, because they measure different things: searches, pull requests, survey answers.
+                </p>
+                <p>
+                    This is an attempt at the whole picture. It covers twenty-five languages: the most widely used
+                    general-purpose languages across seven independent rankings, plus the smaller ones developers
+                    admire out of all proportion to their size. Each is scored on eleven facets, from performance and
+                    safety to tooling and job demand, and you can lay them out along any of them. The facet scores
+                    are my judgement, informed by benchmarks and studies; the popularity data comes from the sources.
+                    Every language also has a full profile, with the same small program written in each, so you can
+                    see the differences rather than read about them.
+                </p>
+            </div>
+            <nav class="ls-contents" aria-label="Sections">
+                <p class="ls-label">Contents</p>
+                <ol>
+                    {sections.map(([id, label], index) => (
+                        <li>
+                            <a href={`#${id}`}>
+                                <span>{String(index + 1).padStart(2, '0')}</span>
+                                {label}
+                            </a>
+                        </li>
+                    ))}
+                </ol>
+            </nav>
+        </header>
+
+        <section id="lineup" class="ls-section" aria-labelledby="lineup-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">01 · The lineup</p>
+                <h2 id="lineup-heading" class="ls-h2">Twenty-five languages, six families</h2>
+                <p class="ls-lede">
+                    Families group languages by the deal they offer: who manages memory, how much the compiler checks,
+                    and where the code runs. Within each family, languages are in order of birth. Hover over a tile
+                    for a summary, or select it for the full profile.
+                </p>
+            </div>
+
+            <div class="ls-lineup">
+                <div class="ls-lineup__wall">
+                    {byFamily.map(({ family, members }) => (
+                        <div class="ls-lineup__family" style={colors(family.key)}>
+                            <div class="ls-lineup__head">
+                                <span class="ls-swatch" aria-hidden="true"></span>
+                                <h3>{family.name}</h3>
+                                <p>{family.blurb}</p>
+                            </div>
+                            <div class="ls-lineup__tiles">
+                                {members.map((language) => <LanguageTile language={language} />)}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <aside class="ls-preview" data-ls-preview aria-live="polite">
+                    <div data-ls-preview-key>
+                        <p class="ls-label">How to read a tile</p>
+                        <div class="ls-preview__key">
+                            <div class="ls-tile ls-tile--key" aria-hidden="true">
+                                <span class="ls-tile__body">
+                                    <span class="ls-tile__top"><span>Year</span><span>#</span></span>
+                                    <span class="ls-tile__symbol">Sy</span>
+                                    <span class="ls-tile__name">Name</span>
+                                </span>
+                            </div>
+                            <dl>
+                                <dt>Year</dt>
+                                <dd>When it first appeared in public.</dd>
+                                <dt>#</dt>
+                                <dd>Popularity rank across seven sources.</dd>
+                                <dt>Colour</dt>
+                                <dd>Its family.</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div data-ls-preview-card hidden>
+                        <p class="ls-kicker" data-preview="kicker"></p>
+                        <p class="ls-preview__name" data-preview="name"></p>
+                        <p class="ls-preview__tagline" data-preview="tagline"></p>
+                        <ul class="ls-preview__traits" data-preview="traits"></ul>
+                        <ul class="ls-bars ls-bars--compact" data-preview="bars"></ul>
+                        <p class="ls-hint">Select for the full profile</p>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section id="spectrum" class="ls-section ls-wide" aria-labelledby="spectrum-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">02 · The spectrum</p>
+                <h2 id="spectrum-heading" class="ls-h2">Line them up along any facet</h2>
+                <p class="ls-lede">
+                    Pick a lens and all twenty-five languages slide into place, from one end of the spectrum to the
+                    other. Within a stack, the more popular language sits closer to the axis.
+                </p>
+            </div>
+
+            <div class="ls-toolbar">
+                <div class="ls-segmented" role="radiogroup" aria-label="Lens">
+                    {lenses.map((item) => (
+                        <button
+                            type="button"
+                            role="radio"
+                            aria-checked={item.key === defaultLens.key ? 'true' : 'false'}
+                            data-ls-lens={item.key}
+                        >
+                            {item.name}
+                        </button>
+                    ))}
+                </div>
+                <div class="ls-families" role="group" aria-label="Highlight a family">
+                    {families.map((family) => (
+                        <button type="button" class="ls-chip" aria-pressed="false" data-ls-family={family.key} style={colors(family.key)}>
+                            <span class="ls-swatch" aria-hidden="true"></span>
+                            {family.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div class="ls-spectrum">
+                <div class="ls-spectrum__note">
+                    <p class="ls-spectrum__question" data-ls-lens-question>{defaultLens.question}</p>
+                    <p data-ls-lens-note>{defaultLens.note}</p>
+                </div>
+                <div class="ls-swarm" data-ls-swarm style={`--levels:${swarmLevels}`}>
+                    <div class="ls-swarm__field">
+                        {languages.map((language) => {
+                            const placement = swarmLayout.get(language.id)!;
+                            return (
+                                <LanguageTile
+                                    language={language}
+                                    mini
+                                    class="ls-swarm__tile"
+                                    style={`--x:${placement.x.toFixed(2)};--level:${placement.level}`}
+                                />
+                            );
+                        })}
+                    </div>
+                    <div class="ls-axis" data-ls-swarm-axis>
+                        {defaultLens.ticks.map((tick) => (
+                            <span style={`--x:${tickPercent(defaultLens, tick).toFixed(2)}`}>{tick}</span>
+                        ))}
+                    </div>
+                    <div class="ls-axis-ends">
+                        <span data-ls-lens-low>← {defaultLens.low}</span>
+                        <span data-ls-lens-high>{defaultLens.high} →</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="map" class="ls-section ls-wide" aria-labelledby="map-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">03 · The trade-off map</p>
+                <h2 id="map-heading" class="ls-h2">Every language is a trade-off</h2>
+                <p class="ls-lede">
+                    One axis hides as much as it shows. Put two facets against each other and the trade-offs appear.
+                    Start with one of the questions below, or choose your own axes. Where tiles had to move apart to
+                    stay readable, a thin line points back to their exact position.
+                </p>
+            </div>
+
+            <div class="ls-toolbar">
+                <div class="ls-segmented" role="radiogroup" aria-label="Question">
+                    {mapViews.map((view, index) => (
+                        <button type="button" role="radio" aria-checked={index === 0 ? 'true' : 'false'} data-ls-view={view.key}>
+                            {view.name}
+                        </button>
+                    ))}
+                </div>
+                <div class="ls-axes">
+                    <label>
+                        <span>Across</span>
+                        <select data-ls-axis="x">
+                            {lenses.map((item) => <option value={item.key} selected={item.key === defaultView.x}>{item.name}</option>)}
+                        </select>
+                    </label>
+                    <label>
+                        <span>Up</span>
+                        <select data-ls-axis="y">
+                            {lenses.map((item) => <option value={item.key} selected={item.key === defaultView.y}>{item.name}</option>)}
+                        </select>
+                    </label>
+                </div>
+            </div>
+
+            <div class="ls-map">
+                <p class="ls-map__note" data-ls-view-note>{defaultView.note}</p>
+                <div class="ls-plot" data-ls-plot>
+                    <div class="ls-plot__frame">
+                        <div class="ls-plot__grid" data-ls-plot-grid aria-hidden="true"></div>
+                        {defaultView.quadrants.map((label, index) => (
+                            <span class={`ls-plot__quadrant ls-plot__quadrant--${index}`} data-ls-quadrant={index}>{label}</span>
+                        ))}
+                        <svg class="ls-plot__leaders" data-ls-leaders aria-hidden="true"></svg>
+                        {languages.map((language) => {
+                            const position = mapLayout.get(language.id)!;
+                            return (
+                                <LanguageTile
+                                    language={language}
+                                    mini
+                                    class="ls-plot__tile"
+                                    style={`--px:${((position.x / plot.width) * 100).toFixed(2)};--py:${((position.y / plot.height) * 100).toFixed(2)}`}
+                                />
+                            );
+                        })}
+                    </div>
+                    <div class="ls-plot__x" aria-hidden="true">
+                        <span data-ls-plot-xlow>← {lens(defaultView.x).low}</span>
+                        <strong data-ls-plot-xname>{lens(defaultView.x).name}</strong>
+                        <span data-ls-plot-xhigh>{lens(defaultView.x).high} →</span>
+                    </div>
+                    <div class="ls-plot__y" aria-hidden="true">
+                        <span data-ls-plot-ylow>← {lens(defaultView.y).low}</span>
+                        <strong data-ls-plot-yname>{lens(defaultView.y).name}</strong>
+                        <span data-ls-plot-yhigh>{lens(defaultView.y).high} →</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="rankings" class="ls-section ls-wide" aria-labelledby="rankings-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">04 · Popularity</p>
+                <h2 id="rankings-heading" class="ls-h2">Seven rankings, one consensus</h2>
+                <p class="ls-lede">
+                    No single source can tell you how popular a language is. TIOBE and PYPL count web searches,
+                    RedMonk compares GitHub with Stack Overflow, IEEE Spectrum blends seven signals, GitHub counts
+                    contributors, and JetBrains and Stack Overflow survey developers. Each line follows one language
+                    across all seven, ending at its average position. Hover over a line, or pick one of the stories.
+                </p>
+            </div>
+
+            <div class="ls-rankings">
+                <div class="ls-stories">
+                    <p class="ls-label">Where the sources disagree</p>
+                    <div class="ls-stories__list" role="group" aria-label="Stories">
+                        {rankingStories.map((story) => (
+                            <button type="button" aria-pressed="false" data-ls-story={story.id} data-text={story.text}>
+                                {story.title}
+                            </button>
+                        ))}
+                    </div>
+                    <div class="ls-readout" data-ls-readout aria-live="polite">
+                        <p class="ls-readout__name" data-ls-readout-name>Python</p>
+                        <p class="ls-readout__text" data-ls-readout-text>
+                            Python is first or second in every source except Stack Overflow’s survey, where JavaScript,
+                            SQL and HTML/CSS come first. It is the closest thing to a consensus number one.
+                        </p>
+                        <dl class="ls-readout__ranks" data-ls-readout-ranks>
+                            {popularitySources.map((source) => (
+                                <div>
+                                    <dt>{source.short}</dt>
+                                    <dd>{formatSourceRank(source.key, getLanguage('python')!.ranks[source.key])}</dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
+                </div>
+                <div class="ls-bump-wrap">
+                    <svg
+                        class="ls-bump"
+                        viewBox={`0 0 ${bump.width} ${bumpHeight}`}
+                        role="img"
+                        aria-labelledby="bump-title"
+                        data-ls-bump
+                    >
+                        <title id="bump-title">Position of each language among these {languages.length} in seven popularity sources, and on average</title>
+                        {bumpColumns.map((column, index) => (
+                            <g class="ls-bump__column">
+                                <line x1={bumpX(index)} x2={bumpX(index)} y1={bump.top - 12} y2={unrankedY + 8} />
+                                <text x={bumpX(index)} y={18} class="ls-bump__head">{column.label}</text>
+                                <text x={bumpX(index)} y={34} class="ls-bump__sub">{column.edition}</text>
+                            </g>
+                        ))}
+                        <text x={bump.left - 8} y={unrankedY + 4} class="ls-bump__unranked" text-anchor="end">—</text>
+                        <text x={bump.right + 18} y={unrankedY + 4} class="ls-bump__sub" text-anchor="start">not ranked by that source</text>
+                        {bumpLines.map(({ language, points, path }) => (
+                            <g
+                                class="ls-bump__line"
+                                data-ls-bump-line={language.id}
+                                tabindex="0"
+                                role="button"
+                                aria-label={`${language.name}: ${popularitySources.map((source) => `${source.short} ${formatSourceRank(source.key, language.ranks[source.key])}`).join(', ')}. Consensus ${rankOf(language)}.`}
+                            >
+                                <path class="ls-bump__hit" d={path} />
+                                <path class="ls-bump__path" d={path} />
+                                {points.map((point) => (
+                                    <g class:list={['ls-bump__node', { 'is-unranked': !point.ranked }]}>
+                                        <circle cx={point.x} cy={point.y} r="3.5" />
+                                        <text x={point.x} y={point.y - 8}>{point.label === 'not ranked' ? '—' : point.label}</text>
+                                    </g>
+                                ))}
+                                <text class="ls-bump__label" x={bump.labelX} y={bumpY(rankOf(language)) + 4}>
+                                    {rankOf(language)}. {language.name}
+                                </text>
+                            </g>
+                        ))}
+                    </svg>
+                </div>
+            </div>
+
+            <details class="ls-data">
+                <summary>Show the published ranks as a table</summary>
+                <div class="ls-scroll">
+                    <table class="ls-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Language</th>
+                                {popularitySources.map((source) => (
+                                    <th scope="col">
+                                        <a href={source.url}>{source.short}</a>
+                                        <span>{source.edition}</span>
+                                    </th>
+                                ))}
+                                <th scope="col">Consensus</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {byPopularity.map((language) => (
+                                <tr>
+                                    <th scope="row">{language.name}</th>
+                                    {popularitySources.map((source) => <td>{formatSourceRank(source.key, language.ranks[source.key])}</td>)}
+                                    <td><strong>#{rankOf(language)}</strong></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="ls-footnote">
+                    Ranks as published. PYPL ranks C and C++ together. TIOBE publishes positions 51 to 100 only as a
+                    band. GitHub publishes its top ten, and RedMonk its top twenty plus a few named positions.
+                </p>
+            </details>        </section>
+
+        <section id="lineage" class="ls-section ls-wide" aria-labelledby="lineage-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">05 · Family tree</p>
+                <h2 id="lineage-heading" class="ls-h2">Nothing is invented from scratch</h2>
+                <p class="ls-lede">
+                    Every language on this list borrowed its best ideas. The faded nodes are ancestors that didn’t
+                    make the lineup but shaped it: Lisp, ML, Smalltalk, Erlang. Hover over or focus any node to
+                    trace what it took and what it passed on.
+                </p>
+            </div>
+            <p class="ls-lineage__caption" data-ls-lineage-caption aria-live="polite">
+                Follow a language’s line to see where its ideas came from.
+            </p>
+            <div class="ls-scroll ls-lineage-wrap">
+                <svg
+                    class="ls-lineage"
+                    viewBox={`0 0 ${lineage.width} ${lineageHeight}`}
+                    role="img"
+                    aria-labelledby="lineage-title"
+                    data-ls-lineage
+                >
+                    <title id="lineage-title">Timeline of the {languages.length} languages and {ancestors.length} ancestors, by family, with lines for direct influences</title>
+                    {decades.map((decade) => (
+                        <g class="ls-lineage__decade">
+                            <line x1={yearX(decade)} x2={yearX(decade)} y1={lineage.top} y2={lineageHeight - 24} />
+                            <text x={yearX(decade)} y={lineageHeight - 8}>{decade}</text>
+                        </g>
+                    ))}
+                    {lanes.map((lane) => (
+                        <g class="ls-lineage__lane" style={colors(lane.family.key)}>
+                            <rect x="0" y={lane.y} width={lineage.width} height={lane.height} />
+                            <text x="8" y={lane.y + 13}>{lane.family.name}</text>
+                        </g>
+                    ))}
+                    <g class="ls-lineage__edges">
+                        {lineageEdges.map((edge) => <path d={edge.d} data-from={edge.from} data-to={edge.to} />)}
+                    </g>
+                    {lanes.flatMap((lane) =>
+                        lane.nodes.map((node) => (
+                            <g
+                                class:list={['ls-lineage__node', { 'is-ancestor': node.ancestor }]}
+                                data-ls-node={node.id}
+                                style={colors(node.family)}
+                                tabindex="0"
+                                role="button"
+                                aria-label={`${node.name}, ${node.year}${node.ancestor ? ', ancestor' : ''}`}
+                            >
+                                <rect x={node.x} y={node.y} width={node.width} height={lineage.nodeHeight} rx="2" />
+                                <text x={node.x + node.width / 2} y={node.y + 15}>{node.name}</text>
+                            </g>
+                        )),
+                    )}
+                </svg>
+            </div>
+        </section>
+
+        <section id="compare" class="ls-section ls-wide" aria-labelledby="compare-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">06 · Head to head</p>
+                <h2 id="compare-heading" class="ls-h2">Pick two or three and compare</h2>
+                <p class="ls-lede">
+                    Choose a classic matchup or build your own. The dots show each language on every facet, the
+                    list picks out where they differ most, and at the bottom you’ll find the same program written
+                    in each.
+                </p>
+            </div>
+
+            <div class="ls-toolbar">
+                <div class="ls-segmented ls-segmented--wrap" role="group" aria-label="Matchups">
+                    {matchups.map((matchup, index) => (
+                        <button type="button" aria-pressed={index === 0 ? 'true' : 'false'} data-ls-matchup={matchup.ids.join(' ')}>
+                            {matchup.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div class="ls-compare">
+                <div class="ls-pickers">
+                    {[0, 1, 2].map((slot) => (
+                        <label class="ls-picker" data-slot={slot}>
+                            <span class="ls-picker__key" aria-hidden="true">{'ABC'[slot]}</span>
+                            <span class="sr-only">Language {'ABC'[slot]}</span>
+                            <select data-ls-pick={slot}>
+                                <option value="">{slot < 2 ? 'Choose a language' : 'Add a third (optional)'}</option>
+                                {families.map((family) => (
+                                    <optgroup label={family.name}>
+                                        {languages
+                                            .filter((language) => language.family === family.key)
+                                            .map((language) => (
+                                                <option value={language.id} selected={matchups[0].ids[slot] === language.id}>
+                                                    {language.name}
+                                                </option>
+                                            ))}
+                                    </optgroup>
+                                ))}
+                            </select>
+                        </label>
+                    ))}
+                </div>
+
+                <div class="ls-compare__grid">
+                    <div class="ls-dots" data-ls-dots>
+                        <div class="ls-dots__scale" aria-hidden="true">
+                            <span></span>
+                            <span class="ls-dots__ticks">
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((tick) => <i style={`--x:${(tick - 0.5) * 10}`}>{tick}</i>)}
+                            </span>
+                        </div>
+                        {facets.map((facet) => (
+                            <div class="ls-dots__row" data-facet={facet.key}>
+                                <span class="ls-dots__label">{facet.name}</span>
+                                <span class="ls-dots__track" data-ls-track={facet.key}></span>
+                            </div>
+                        ))}
+                    </div>
+                    <div class="ls-diffs">
+                        <p class="ls-label">Where they differ most</p>
+                        <ul data-ls-diffs aria-live="polite"></ul>
+                    </div>
+                </div>
+
+                <div class="ls-scroll">
+                    <table class="ls-table ls-compare__traits" data-ls-traits></table>
+                </div>
+
+                <div class="ls-compare__code">
+                    <p class="ls-label">The same program in each</p>
+                    <p class="ls-compare__task">{sharedTask}</p>
+                    <div class="ls-compare__snippets" data-ls-snippets></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="choose" class="ls-section ls-wide" aria-labelledby="choose-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">07 · Choosing one</p>
+                <h2 id="choose-heading" class="ls-h2">Which language fits your project?</h2>
+                <p class="ls-lede">
+                    Start from a kind of project, then adjust what matters to you. The fit is a weighted average of
+                    the facet scores, reduced when the language is rarely used for that kind of work. It won’t know
+                    your team, so treat it as a shortlist, not a verdict.
+                </p>
+            </div>
+
+            <div class="ls-toolbar">
+                <div class="ls-segmented ls-segmented--wrap" role="radiogroup" aria-label="Project">
+                    {projects.map((project, index) => (
+                        <button type="button" role="radio" aria-checked={index === 0 ? 'true' : 'false'} data-ls-project={project.key}>
+                            {project.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div class="ls-choose">
+                <form class="ls-weights" data-ls-weights>
+                    <p class="ls-label">What matters</p>
+                    {facets.map((facet) => (
+                        <label class="ls-weight">
+                            <span class="ls-weight__name">{facet.name}</span>
+                            <input type="range" min="0" max="3" step="1" value={projects[0].weights[facet.key]} data-ls-weight={facet.key} />
+                            <output data-ls-weight-label={facet.key}>{weightLabels[projects[0].weights[facet.key]]}</output>
+                        </label>
+                    ))}
+                    <label class="ls-weight ls-weight--domain">
+                        <span class="ls-weight__name">Kind of work</span>
+                        <select data-ls-domain>
+                            <option value="">Anything</option>
+                            {Object.entries(domainLabels).map(([key, label]) => (
+                                <option value={key} selected={projects[0].domains.includes(key as never)}>{label}</option>
+                            ))}
+                        </select>
+                    </label>
+                </form>
+                <div>
+                    <p class="ls-label">Best fits</p>
+                    <ol class="ls-results" data-ls-results aria-live="polite"></ol>
+                </div>
+            </div>
+        </section>
+
+        <section id="insights" class="ls-section" aria-labelledby="insights-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">08 · What it shows</p>
+                <h2 id="insights-heading" class="ls-h2">Ten things the spectrum shows</h2>
+            </div>
+
+            <ol class="ls-insights">
+                <li>
+                    <h3>There is no best language, only a frontier</h3>
+                    <p>
+                        Put any two facets against each other and the languages form a curve. Speed costs
+                        approachability, safety costs freedom, and expressive power costs readability for the next
+                        person. What has changed is where the curve sits. Languages designed between 2009 and 2016,
+                        such as Go, Kotlin, Swift and Rust, learned from their predecessors and got more of both
+                        sides. Older languages are moving the same way through constant revision: today’s Java and
+                        C# look little like their 2010 selves.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="map:fast-friendly">Show the trade-off</button>
+                </li>
+                <li>
+                    <h3>The managed middle runs business software</h3>
+                    <p>
+                        Java, C#, Go and Kotlin share a profile: statically typed, garbage collected, fast enough,
+                        with mature tools and long compatibility records. None of them tops a single facet, but they
+                        score high on nearly all of them, and that is why most enterprise software lives here.
+                        Boring is a feature when a system has to outlive its authors. C# was TIOBE’s language of the
+                        year for 2025, and Java and C# both make the top six of IEEE Spectrum’s jobs ranking.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="compare:java csharp go">Compare Java, C# and Go</button>
+                </li>
+                <li>
+                    <h3>Types are winning, even in dynamic languages</h3>
+                    <p>
+                        In August 2025 TypeScript became the most used language on GitHub by monthly contributors,
+                        up 66% in a year to 2.6 million, and it tops JetBrains’ Language Promise Index. The dynamic
+                        languages are moving the same way. Python has type hints and fast checkers, PHP enforces
+                        type declarations, Ruby has RBS and Sorbet, and Elixir 1.20 now type-checks every program
+                        without annotations. No major language has gone the other way. AI is accelerating the shift:
+                        GitHub credits typed languages for making AI-assisted code more reliable, and a 2025 study
+                        found that 94% of compilation errors in LLM-generated TypeScript were type errors. The type
+                        checker is what catches the model’s mistakes.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="rank:typescript">Show TypeScript’s rankings</button>
+                </li>
+                <li>
+                    <h3>Memory safety moved from preference to policy</h3>
+                    <p>
+                        Microsoft and Google’s Chromium team both found that around 70% of their serious security
+                        vulnerabilities come from memory-safety bugs. In 2024 the White House urged software makers
+                        to adopt memory-safe languages, and CISA and the FBI asked them to publish memory-safety
+                        roadmaps by the end of 2025. The data backs the policy: as Android shifted new code to Rust,
+                        memory-safety bugs fell from 76% of its vulnerabilities in 2019 to below 20% in 2025. C and
+                        C++ aren’t going anywhere, and C++26 adds a hardened standard library, but new C or C++ in
+                        security-sensitive code now needs a reason.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="map:safe-fast">Show safety against speed</button>
+                </li>
+                <li>
+                    <h3>Runtimes matter more than syntax</h3>
+                    <p>
+                        The JVM hosts Java, Kotlin, Scala and Clojure. .NET hosts C# and F#. The BEAM hosts Elixir and
+                        Gleam. JavaScript engines run JavaScript, TypeScript, and code compiled from Kotlin, Dart, F#,
+                        Gleam and ClojureScript. A language on an established runtime inherits its libraries, garbage
+                        collector, concurrency model and deployment story on day one. That is how Kotlin went from
+                        announcement to Android’s preferred language in eight years, and why Gleam was usable in
+                        production at 1.0: it could call decades of Erlang libraries. Choose the runtime first
+                        and the language second.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="lineage:kotlin">Trace Kotlin’s family</button>
+                </li>
+                <li>
+                    <h3>Admiration is a selection effect</h3>
+                    <p>
+                        The most admired languages are small: Odin at 82%, Elixir at 62% and Zig at 58% of users wanting
+                        to keep using them, against 39% for Java and 42% for JavaScript. Part of that is who answers. People
+                        who write Elixir went looking for it, while many people write Java because their employer
+                        does. Bjarne Stroustrup put it best: there are only two kinds of languages, the ones people
+                        complain about and the ones nobody uses. The impressive results are the exceptions:
+                        TypeScript and Python stay well liked at scale, and Rust is admired by 67% of its users even
+                        with 18% of developers using it.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="map:used-admired">Show use against admiration</button>
+                </li>
+                <li>
+                    <h3>Popularity depends on who you ask</h3>
+                    <p>
+                        TIOBE has C at number two and TypeScript at 38; GitHub has TypeScript first and C outside
+                        its top ten. JetBrains’ survey puts Kotlin at 18% usage, which says as much about JetBrains’
+                        audience as about Kotlin. Every index measures a population, not the world, which is why the
+                        consensus here averages seven of them. The rankers are also warning that AI is eroding their
+                        inputs: fewer searches and Stack Overflow questions as developers ask assistants instead.
+                        Expect the next few years of rankings to be noisier.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="rank:c">Show C’s rankings</button>
+                </li>
+                <li>
+                    <h3>Concurrency is the new dividing line</h3>
+                    <p>
+                        Two decades ago the big argument was objects against functions. Now it is how a language
+                        handles ten thousand things at once. Languages designed for multicore machines, such as Go,
+                        Rust, Elixir and Gleam, have it built in. Older ones are retrofitting at great effort: Java’s
+                        virtual threads, Python’s free-threaded build, Ruby’s Ractors, Swift 6’s data-race checks.
+                        async/await, which C# brought to the mainstream in 2012, has since spread to JavaScript,
+                        Python, Rust, Swift and Dart, bringing the “function colouring” problem with it.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="lens:concurrency">Show the concurrency lens</button>
+                </li>
+                <li>
+                    <h3>AI makes the rich richer, and rewards strictness</h3>
+                    <p>
+                        Language models write better code in popular languages, because that is what they were
+                        trained on. Research on multilingual code benchmarks found performance correlates with
+                        popularity, and that models struggle with low-resource languages such as Julia, Lua, OCaml and
+                        R. That is a headwind for every new language, which already faces a cold start. But AI also
+                        rewards languages whose compilers catch mistakes: types, exhaustive matching, borrow checking.
+                        My bet is that the languages that gain most from AI are the ones that are both popular and
+                        strict: TypeScript, C#, Kotlin, Go and Rust.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="map:jobs-momentum">Show jobs against momentum</button>
+                </li>
+                <li>
+                    <h3>Learn a portfolio, not a favourite</h3>
+                    <p>
+                        Ideas move between families, as the family tree shows: pattern matching from ML to Rust, Swift
+                        and C#, async from F# to C# to everyone. Developers who know one language from several
+                        families can see these ideas coming. A practical portfolio: one systems language (Rust or C),
+                        one managed workhorse (Java, C#, Go or Kotlin), TypeScript for the web, Python for data and
+                        glue, and one functional language (Elixir, F#, Clojure or Haskell). The last one will change
+                        how you write the other four.
+                    </p>
+                    <button type="button" class="ls-show" data-ls-show="compare:rust typescript python">Compare Rust, TypeScript and Python</button>
+                </li>
+            </ol>
+        </section>
+
+        <section id="matrix" class="ls-section ls-wide" aria-labelledby="matrix-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">09 · The matrix</p>
+                <h2 id="matrix-heading" class="ls-h2">Everything in one table</h2>
+                <p class="ls-lede">
+                    The reference view. Sort by any column, switch to traits for the technical details, or select a
+                    language for its profile.
+                </p>
+            </div>
+
+            <div class="ls-toolbar">
+                <div class="ls-segmented" role="tablist" aria-label="Matrix view">
+                    <button type="button" role="tab" aria-selected="true" aria-controls="matrix-scores" id="tab-scores" data-ls-tab="scores">Scores</button>
+                    <button type="button" role="tab" aria-selected="false" aria-controls="matrix-traits" id="tab-traits" data-ls-tab="traits">Traits</button>
+                </div>
+                <div class="ls-heat-legend" aria-hidden="true">
+                    <span>Score</span>
+                    <i data-heat="1">1–2</i><i data-heat="2">3–4</i><i data-heat="3">5–6</i><i data-heat="4">7–8</i><i data-heat="5">9–10</i>
+                </div>
+            </div>
+
+            <div id="matrix-scores" role="tabpanel" aria-labelledby="tab-scores" class="ls-scroll" data-ls-panel="scores">
+                <table class="ls-table ls-matrix" data-ls-matrix>
+                    <thead>
+                        <tr>
+                            <th scope="col" aria-sort="none"><button type="button" data-ls-sort="name" data-type="text">Language</button></th>
+                            <th scope="col" aria-sort="ascending"><button type="button" data-ls-sort="rank">Popularity</button></th>
+                            <th scope="col" aria-sort="none"><button type="button" data-ls-sort="admired" data-desc>Admired</button></th>
+                            {facets.map((facet) => (
+                                <th scope="col" aria-sort="none">
+                                    <button type="button" data-ls-sort={facet.key} data-desc title={facet.question}>{facet.name}</button>
+                                </th>
+                            ))}
+                            <th scope="col" aria-sort="none"><button type="button" data-ls-sort="year">Year</button></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {byPopularity.map((language) => (
+                            <tr
+                                data-name={language.name}
+                                data-rank={rankOf(language)}
+                                data-admired={language.admired}
+                                data-year={language.year}
+                                {...Object.fromEntries(facets.map((facet) => [`data-${facet.key}`, language.scores[facet.key]]))}
+                            >
+                                <th scope="row">
+                                    <a href={`#lang-${language.id}`} class="ls-matrix__name" style={colors(language.family)}>
+                                        <span class="ls-swatch" aria-hidden="true"></span>
+                                        {language.name}
+                                    </a>
+                                </th>
+                                <td>#{rankOf(language)}</td>
+                                <td>{language.admired.toFixed(1)}%</td>
+                                {facets.map((facet) => (
+                                    <td class="ls-heat" data-heat={heat(language.scores[facet.key])}>{language.scores[facet.key]}</td>
+                                ))}
+                                <td>{language.year}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="matrix-traits" role="tabpanel" aria-labelledby="tab-traits" class="ls-scroll" data-ls-panel="traits" hidden>
+                <table class="ls-table ls-traits">
+                    <thead>
+                        <tr>
+                            <th scope="col">Language</th>
+                            <th scope="col">Typing</th>
+                            <th scope="col">Memory</th>
+                            <th scope="col">Runs as</th>
+                            <th scope="col">Concurrency</th>
+                            <th scope="col">Null handling</th>
+                            <th scope="col">Packages</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {byPopularity.map((language) => (
+                            <tr>
+                                <th scope="row">
+                                    <a href={`#lang-${language.id}`} class="ls-matrix__name" style={colors(language.family)}>
+                                        <span class="ls-swatch" aria-hidden="true"></span>
+                                        {language.name}
+                                    </a>
+                                </th>
+                                <td><b>{typingLabels[language.typingKind]}</b> {language.typing}</td>
+                                <td><b>{memoryLabels[language.memoryKind]}</b> {language.memory}</td>
+                                <td><b>{runtimeLabels[language.runtimeKind]}</b> {language.runtime}</td>
+                                <td>{language.concurrency}</td>
+                                <td>{language.nulls}</td>
+                                <td>{language.packages}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="profiles" class="ls-section" aria-labelledby="profiles-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">10 · Profiles</p>
+                <h2 id="profiles-heading" class="ls-h2">All twenty-five, in depth</h2>
+                <p class="ls-lede">
+                    Each profile covers what the language is for, the idea at its core, its strengths and
+                    weaknesses, where it scores high and low, and the same program written in it: {sharedTask.toLowerCase()}
+                </p>
+            </div>
+
+            <div class="ls-profiles">
+                {byFamily.map(({ family, members }) => (
+                    <div class="ls-profiles__group">
+                        <div class="ls-profiles__head">
+                            <h3>{family.name}</h3>
+                            <p>{family.blurb}</p>
+                        </div>
+                        {members.map((language) => {
+                            const profile = profiles[language.id];
+                            const later = descendants(language);
+                            return (
+                                <details class="ls-profile" id={`lang-${language.id}`} data-ls-profile={language.id}>
+                                    <summary>
+                                        <span class="ls-mini" style={colors(language.family)} aria-hidden="true">
+                                            <span class:list={['ls-mini__symbol', { 'is-long': language.symbol.length > 2 }]}>{language.symbol}</span>
+                                        </span>
+                                        <span>
+                                            <span class="ls-profile__name">{language.name}</span>
+                                            <span class="ls-profile__tagline">{language.tagline}</span>
+                                        </span>
+                                    </summary>
+                                    <div class="ls-profile__body" data-ls-profile-body>
+                                        <p class="ls-profile__summary">{profile.summary}</p>
+                                        <p class="ls-profile__idea"><span>The big idea</span>{profile.idea}</p>
+
+                                        <div class="ls-profile__pair">
+                                            <div>
+                                                <h4 class="ls-label">Strengths</h4>
+                                                <ul class="ls-list ls-list--plus">{profile.strengths.map((item) => <li>{item}</li>)}</ul>
+                                            </div>
+                                            <div>
+                                                <h4 class="ls-label">Weaknesses</h4>
+                                                <ul class="ls-list ls-list--minus">{profile.weaknesses.map((item) => <li>{item}</li>)}</ul>
+                                            </div>
+                                        </div>
+
+                                        <dl class="ls-profile__pair ls-profile__when">
+                                            <div>
+                                                <dt class="ls-label">Reach for it for</dt>
+                                                <dd>{profile.reachFor}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="ls-label">Think twice for</dt>
+                                                <dd>{profile.avoid}</dd>
+                                            </div>
+                                        </dl>
+
+                                        <div class="ls-profile__pair">
+                                            <dl class="ls-facts">
+                                                <div><dt>Created by</dt><dd>{language.creator}</dd></div>
+                                                <div><dt>First appeared</dt><dd>{language.year}</dd></div>
+                                                <div><dt>Latest</dt><dd>{profile.latest}</dd></div>
+                                                <div><dt>Typing</dt><dd>{language.typing}</dd></div>
+                                                <div><dt>Memory</dt><dd>{language.memory}</dd></div>
+                                                <div><dt>Runs as</dt><dd>{language.runtime}</dd></div>
+                                                <div><dt>Concurrency</dt><dd>{language.concurrency}</dd></div>
+                                                <div><dt>Null handling</dt><dd>{language.nulls}</dd></div>
+                                                <div><dt>Paradigms</dt><dd>{language.paradigms.join(', ')}</dd></div>
+                                                <div><dt>Packages</dt><dd>{language.packages}</dd></div>
+                                                <div><dt>Home turf</dt><dd>{homeTurf(language).join(', ')}</dd></div>
+                                            </dl>
+                                            <div>
+                                                <h4 class="ls-label">Scores</h4>
+                                                <ul class="ls-bars">
+                                                    {facets.map((facet) => (
+                                                        <li>
+                                                            <span>{facet.name}</span>
+                                                            <span class="ls-bar" aria-hidden="true"><i style={`--v:${language.scores[facet.key]}`}></i></span>
+                                                            <b>{language.scores[facet.key]}</b>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                                <h4 class="ls-label ls-profile__subhead">Popularity</h4>
+                                                <dl class="ls-ranks">
+                                                    {popularitySources.map((source) => (
+                                                        <div><dt>{source.short}</dt><dd>{formatSourceRank(source.key, language.ranks[source.key])}</dd></div>
+                                                    ))}
+                                                    <div class="is-total"><dt>Consensus</dt><dd>#{rankOf(language)} of {languages.length}</dd></div>
+                                                    <div class="is-total"><dt>Admired</dt><dd>{language.admired.toFixed(1)}%</dd></div>
+                                                </dl>
+                                            </div>
+                                        </div>
+
+                                        <p class="ls-profile__recent"><span>Lately</span>{profile.recent}</p>
+
+                                        <figure class="ls-snippet" data-ls-snippet={language.id}>
+                                            <figcaption>
+                                                <span>{language.name}</span>
+                                                <span>{lineCount(profile.snippet.code)} lines</span>
+                                            </figcaption>
+                                            <Code code={profile.snippet.code} lang={profile.snippet.lang as never} theme="vitesse-light" />
+                                        </figure>
+
+                                        <div class="ls-profile__links">
+                                            <div>
+                                                <span class="ls-label">Borrowed from</span>
+                                                <span class="ls-links">
+                                                    {language.influences.map((id) => {
+                                                        const other = getLanguage(id);
+                                                        return other ? (
+                                                            <a href={`#lang-${other.id}`} style={colors(other.family)}>{other.name}</a>
+                                                        ) : (
+                                                            <span class="is-ancestor">{influenceName(id)}</span>
+                                                        );
+                                                    })}
+                                                </span>
+                                            </div>
+                                            {later.length > 0 && (
+                                                <div>
+                                                    <span class="ls-label">Passed ideas to</span>
+                                                    <span class="ls-links">
+                                                        {later.map((other) => (
+                                                            <a href={`#lang-${other.id}`} style={colors(other.family)}>{other.name}</a>
+                                                        ))}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </details>
+                            );
+                        })}
+                    </div>
+                ))}
+            </div>
+        </section>
+
+        <section id="method" class="ls-section" aria-labelledby="method-heading">
+            <div class="ls-section__intro">
+                <p class="ls-kicker">11 · Method & sources</p>
+                <h2 id="method-heading" class="ls-h2">How this was put together</h2>
+            </div>
+            <div class="prose prose-stone max-w-3xl md:prose-lg prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700">
+                <h3>Choosing the twenty-five</h3>
+                <p>
+                    The list starts with the general-purpose languages that rank highest on average across the seven
+                    popularity sources, then adds smaller languages that developers rate far above their usage:
+                    Elixir, Gleam, Zig, Odin, Clojure, F#, Haskell and Julia. SQL, HTML and CSS, Bash and PowerShell rank
+                    near the top of every survey but are left out because you don’t build a whole system in them.
+                    SQL deserves a special mention: it is older than all but one language here and will probably
+                    outlive most of them. Near misses include Objective-C, Erlang, OCaml, Perl, MATLAB and Visual
+                    Basic.
+                </p>
+                <h3>The eleven facets</h3>
+                <p>
+                    Every facet is scored from 1 to 10. The scores are editorial: mine, calibrated against
+                    benchmarks, studies, and how each language behaves on real projects. They compare languages with
+                    each other, so a 5 is middling within this group, not bad in absolute terms.
+                </p>
+                <dl class="ls-method-facets">
+                    {facets.map((facet) => (
+                        <div>
+                            <dt>{facet.name}</dt>
+                            <dd>{facet.basis}</dd>
+                        </div>
+                    ))}
+                </dl>
+                <h3>Popularity</h3>
+                <p>
+                    The popularity rank is not a survey. For each source, every language gets its position among
+                    these twenty-five. Languages a source doesn’t rank share the remaining places, and ties share a
+                    place. The consensus is the average of those seven positions, and the popularity lens rescales
+                    it to 1–10.
+                </p>
+                <ul>
+                    {popularitySources.map((source) => (
+                        <li>
+                            <a href={source.url}>{source.name}</a> ({source.edition}): {source.measures}
+                        </li>
+                    ))}
+                </ul>
+                <p>
+                    Some caveats. IEEE Spectrum’s 2026 ranking and JetBrains’ 2026 report weren’t out when this was
+                    written, so their 2025 editions are used. PYPL’s Python share jumped by 24 points in a year,
+                    which more likely reflects collapsing tutorial searches for everything else than a surge in
+                    Python. TIOBE changed its method in October 2026 to include Mandarin search terms, which
+                    probably explains sudden jumps for Julia, Dart and OCaml. GitHub ranks by contributors rather
+                    than code, and JetBrains’ audience leans towards users of JetBrains tools. That is the point of
+                    using seven sources: their biases point in different directions.
+                </p>
+                <h3>Admiration</h3>
+                <p>
+                    “Admired” is the share of a language’s current users who want to keep using it, from the{' '}
+                    <a href="https://survey.stackoverflow.co/2026/technology">2026 Stack Overflow survey</a>. It is
+                    the only large survey that asks this for every language. Its respondents skew towards web
+                    developers, and small languages benefit from self-selection, so it is shown as its own lens and
+                    never mixed into the popularity rank.
+                </p>
+                <h3>The shared program</h3>
+                <p>
+                    Every profile includes the same task written idiomatically: {sharedTask.toLowerCase()} Eleven of the
+                    twenty-five were compiled and run with current toolchains (C, C++, C#, F#, Java, JavaScript,
+                    Odin, Python, Rust, TypeScript and Zig 0.17). The rest were written against current documentation and
+                    checked by hand. If you spot a mistake, I’d like to hear about it.
+                </p>
+                <h3>Other sources</h3>
+                <ul>
+                    <li>Pereira et al., <a href="https://greenlab.di.uminho.pt/wp-content/uploads/2017/10/sleFinal.pdf">Energy Efficiency across Programming Languages</a> (SLE 2017), for relative speed and energy use.</li>
+                    <li>Microsoft Security Response Center, <a href="https://msrc.microsoft.com/blog/2019/07/we-need-a-safer-systems-programming-language">We need a safer systems programming language</a> (2019), and the <a href="https://www.chromium.org/Home/chromium-security/memory-safety/">Chromium memory safety</a> page.</li>
+                    <li>Google Security, <a href="https://security.googleblog.com/2024/09/eliminating-memory-safety-vulnerabilities-Android.html">Eliminating memory safety vulnerabilities at the source</a> (2024) and <a href="https://blog.google/security/rust-in-android-move-fast-fix-things/">Rust in Android</a> (2025).</li>
+                    <li>The White House ONCD, <a href="https://bidenwhitehouse.archives.gov/oncd/briefing-room/2024/02/26/press-release-technical-report/">Back to the Building Blocks</a> (2024), and CISA, <a href="https://www.cisa.gov/resources-tools/resources/product-security-bad-practices">Product Security Bad Practices</a> (2025).</li>
+                    <li>Microsoft, <a href="https://devblogs.microsoft.com/typescript/typescript-native-port/">A 10x faster TypeScript</a> (2025).</li>
+                    <li>Mündler et al., <a href="https://arxiv.org/abs/2504.09246">Type-Constrained Code Generation with Language Models</a> (PLDI 2025).</li>
+                    <li>Cassano et al., <a href="https://arxiv.org/abs/2208.08227">MultiPL-E</a> (2022) and <a href="https://arxiv.org/abs/2308.09895">MultiPL-T</a> (2023), on language models and less common languages.</li>
+                    <li><a href="https://devjobsscanner.com/blog/top-8-most-demanded-programming-languages">DevJobsScanner</a>, for job postings by language in 2025.</li>
+                </ul>
+                <p>
+                    Data as of {formatDate(post.date)}. Languages move quickly, and so will some of these numbers.
+                    Disagree with a score? Good. The useful part of a spectrum like this is the argument it starts
+                    about which trade-offs matter for the system in front of you.
+                </p>
+            </div>
+        </section>
+    </article>
+
+    <dialog class="ls ls-dialog" aria-labelledby="ls-dialog-title" data-ls-dialog>
+        <div class="ls-dialog__bar">
+            <span data-ls-dialog-position></span>
+            <div class="ls-dialog__nav">
+                <button type="button" data-ls-dialog-step="-1" aria-label="Previous language">←</button>
+                <button type="button" data-ls-dialog-step="1" aria-label="Next language">→</button>
+                <button type="button" data-ls-dialog-close>Close</button>
+            </div>
+        </div>
+        <div class="ls-dialog__content">
+            <div class="ls-dialog__aside">
+                <div class="ls-tile ls-tile--big" data-ls-dialog-tile aria-hidden="true">
+                    <span class="ls-tile__body">
+                        <span class="ls-tile__top"><span data-tile="year"></span><span data-tile="rank"></span></span>
+                        <span class="ls-tile__symbol" data-tile="symbol"></span>
+                        <span class="ls-tile__name" data-tile="name"></span>
+                    </span>
+                </div>
+                <p class="ls-dialog__family" data-ls-dialog-family></p>
+            </div>
+            <div class="ls-dialog__main">
+                <h2 class="ls-dialog__title" id="ls-dialog-title" data-ls-dialog-name></h2>
+                <p class="ls-dialog__tagline" data-ls-dialog-tagline></p>
+                <div data-ls-dialog-body></div>
+            </div>
+        </div>
+    </dialog>
+
+    <div class="ls ls-tooltip" data-ls-tooltip role="tooltip" hidden>
+        <p class="ls-tooltip__value" data-ls-tooltip-value></p>
+        <p class="ls-tooltip__name" data-ls-tooltip-name></p>
+        <p class="ls-tooltip__meta" data-ls-tooltip-meta></p>
+    </div>
+</Layout>
+
+<script>
+    import '../scripts/language-spectrum';
+</script>

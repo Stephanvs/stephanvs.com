@@ -1,0 +1,38 @@
+---
+import { consensusRank, getFamily, languages, type Language } from '../data/programming-languages';
+
+interface Props {
+  language: Language;
+  mini?: boolean;
+  class?: string;
+  style?: string;
+}
+
+const { language, mini = false, class: className, style } = Astro.props;
+const { fill, ink, name: familyName } = getFamily(language.family);
+const rank = consensusRank.get(language.id)!;
+const longSymbol = language.symbol.length > 2;
+---
+
+<a
+  href={`#lang-${language.id}`}
+  class:list={[mini ? 'ls-mini' : 'ls-tile', className]}
+  data-ls-tile
+  data-id={language.id}
+  data-family={language.family}
+  style={`--fill:${fill};--ink:${ink};${style ?? ''}`}
+  aria-label={`${language.name}: ${familyName}, ${language.year}, popularity rank ${rank} of ${languages.length}`}
+>
+  {mini ? (
+    <span class:list={['ls-mini__symbol', { 'is-long': longSymbol }]} aria-hidden="true">{language.symbol}</span>
+  ) : (
+    <span class="ls-tile__body" aria-hidden="true">
+      <span class="ls-tile__top">
+        <span>{language.year}</span>
+        <span>#{rank}</span>
+      </span>
+      <span class:list={['ls-tile__symbol', { 'is-long': longSymbol }]}>{language.symbol}</span>
+      <span class="ls-tile__name">{language.name}</span>
+    </span>
+  )}
+</a>
