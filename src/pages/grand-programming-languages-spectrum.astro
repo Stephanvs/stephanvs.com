@@ -199,7 +199,7 @@ const sections = [
     ['lineage', 'Family tree'],
     ['compare', 'Head to head'],
     ['choose', 'Choosing one'],
-    ['insights', 'What it shows'],
+    ['insights', 'My take'],
     ['matrix', 'The matrix'],
     ['profiles', 'Profiles'],
     ['method', 'Method & sources'],
@@ -219,11 +219,11 @@ const sections = [
                     Every few months someone publishes a ranking of programming languages, and every ranking tells a
                     different story. TIOBE says C is the second most popular language in the world. GitHub says
                     TypeScript is first. Stack Overflow’s survey says JavaScript, as it has for over a decade. They
-                    are all right, because they measure different things: searches, pull requests, survey answers.
+                    are all right, because they measure different things: search results, contributors, survey answers.
                 </p>
                 <p>
-                    This is an attempt at the whole picture. It covers twenty-five languages: the most widely used
-                    general-purpose languages across seven independent rankings, plus the smaller ones developers
+                    This is an attempt at the whole picture. It covers twenty-seven languages: the most widely used
+                    general-purpose languages across seven published rankings, plus the smaller ones developers
                     admire out of all proportion to their size. Each is scored on eleven facets, from performance and
                     safety to tooling and job demand, and you can lay them out along any of them. The facet scores
                     are my judgement, informed by benchmarks and studies; the popularity data comes from the sources.
@@ -249,7 +249,7 @@ const sections = [
         <section id="lineup" class="ls-section" aria-labelledby="lineup-heading">
             <div class="ls-section__intro">
                 <p class="ls-kicker">01 · The lineup</p>
-                <h2 id="lineup-heading" class="ls-h2">Twenty-five languages, six families</h2>
+                <h2 id="lineup-heading" class="ls-h2">Twenty-seven languages, six families</h2>
                 <p class="ls-lede">
                     Families group languages by the deal they offer: who manages memory, how much the compiler checks,
                     and where the code runs. Within each family, languages are in order of birth. Hover over a tile
@@ -310,7 +310,7 @@ const sections = [
                 <p class="ls-kicker">02 · The spectrum</p>
                 <h2 id="spectrum-heading" class="ls-h2">Line them up along any facet</h2>
                 <p class="ls-lede">
-                    Pick a lens and all twenty-five languages slide into place, from one end of the spectrum to the
+                    Pick a lens and all twenty-seven languages slide into place, from one end of the spectrum to the
                     other. Within a stack, the more popular language sits closer to the axis.
                 </p>
             </div>
@@ -560,7 +560,7 @@ const sections = [
                 <h2 id="lineage-heading" class="ls-h2">Nothing is invented from scratch</h2>
                 <p class="ls-lede">
                     Every language on this list borrowed its best ideas. The faded nodes are ancestors that didn’t
-                    make the lineup but shaped it: Lisp, ML, Smalltalk, Erlang. Hover over or focus any node to
+                    make the lineup but shaped it: Lisp, ML, Smalltalk, Prolog. Hover over or focus any node to
                     trace what it took and what it passed on.
                 </p>
             </div>
@@ -738,19 +738,18 @@ const sections = [
 
         <section id="insights" class="ls-section" aria-labelledby="insights-heading">
             <div class="ls-section__intro">
-                <p class="ls-kicker">08 · What it shows</p>
-                <h2 id="insights-heading" class="ls-h2">Ten things the spectrum shows</h2>
+                <p class="ls-kicker">08 · My take</p>
+                <h2 id="insights-heading" class="ls-h2">My take on the spectrum</h2>
             </div>
 
             <ol class="ls-insights">
                 <li>
-                    <h3>There is no best language, only a frontier</h3>
+                    <h3>Language choice depends on the trade-offs</h3>
                     <p>
-                        Put any two facets against each other and the languages form a curve. Speed costs
-                        approachability, safety costs freedom, and expressive power costs readability for the next
-                        person. What has changed is where the curve sits. Languages designed between 2009 and 2016,
-                        such as Go, Kotlin, Swift and Rust, learned from their predecessors and got more of both
-                        sides. Older languages are moving the same way through constant revision: today’s Java and
+                        Rust asks you to learn ownership and borrowing for memory safety without a garbage collector.
+                        Go accepts a collector to keep memory management simple. I see languages such as Go, Kotlin,
+                        Swift and Rust as different answers to the compromises their predecessors made.
+                        Older languages are changing too: today’s Java and
                         C# look little like their 2010 selves.
                     </p>
                     <button type="button" class="ls-show" data-ls-show="map:fast-friendly">Show the trade-off</button>
@@ -759,8 +758,8 @@ const sections = [
                     <h3>The managed middle runs business software</h3>
                     <p>
                         Java, C#, Go and Kotlin share a profile: statically typed, garbage collected, fast enough,
-                        with mature tools and long compatibility records. None of them tops a single facet, but they
-                        score high on nearly all of them, and that is why most enterprise software lives here.
+                        with mature tools and long compatibility records. They score high across many facets,
+                        a combination that suits long-lived enterprise software.
                         Boring is a feature when a system has to outlive its authors. C# was TIOBE’s language of the
                         year for 2025, and Java and C# both make the top six of IEEE Spectrum’s jobs ranking.
                     </p>
@@ -972,7 +971,7 @@ const sections = [
         <section id="profiles" class="ls-section" aria-labelledby="profiles-heading">
             <div class="ls-section__intro">
                 <p class="ls-kicker">10 · Profiles</p>
-                <h2 id="profiles-heading" class="ls-h2">All twenty-five, in depth</h2>
+                <h2 id="profiles-heading" class="ls-h2">All twenty-seven, in depth</h2>
                 <p class="ls-lede">
                     Each profile covers what the language is for, the idea at its core, its strengths and
                     weaknesses, where it scores high and low, and the same program written in it: {sharedTask.toLowerCase()}
@@ -1112,14 +1111,14 @@ const sections = [
                 <h2 id="method-heading" class="ls-h2">How this was put together</h2>
             </div>
             <div class="prose prose-stone max-w-3xl md:prose-lg prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700">
-                <h3>Choosing the twenty-five</h3>
+                <h3>Choosing the twenty-seven</h3>
                 <p>
                     The list starts with the general-purpose languages that rank highest on average across the seven
                     popularity sources, then adds smaller languages that developers rate far above their usage:
-                    Elixir, Gleam, Zig, Odin, Clojure, F#, Haskell and Julia. SQL, HTML and CSS, Bash and PowerShell rank
+                    Elixir, Erlang, Gleam, Zig, Odin, Clojure, F#, Haskell, OCaml and Julia. SQL, HTML and CSS, Bash and PowerShell rank
                     near the top of every survey but are left out because you don’t build a whole system in them.
                     SQL deserves a special mention: it is older than all but one language here and will probably
-                    outlive most of them. Near misses include Objective-C, Erlang, OCaml, Perl, MATLAB and Visual
+                    outlive most of them. Near misses include Objective-C, Perl, MATLAB and Visual
                     Basic.
                 </p>
                 <h3>The eleven facets</h3>
@@ -1139,7 +1138,7 @@ const sections = [
                 <h3>Popularity</h3>
                 <p>
                     The popularity rank is not a survey. For each source, every language gets its position among
-                    these twenty-five. Languages a source doesn’t rank share the remaining places, and ties share a
+                    these twenty-seven. Languages a source doesn’t rank share the remaining places, and ties share a
                     place. The consensus is the average of those seven positions, and the popularity lens rescales
                     it to 1–10.
                 </p>
@@ -1169,9 +1168,9 @@ const sections = [
                 </p>
                 <h3>The shared program</h3>
                 <p>
-                    Every profile includes the same task written idiomatically: {sharedTask.toLowerCase()} Eleven of the
-                    twenty-five were compiled and run with current toolchains (C, C++, C#, F#, Java, JavaScript,
-                    Odin, Python, Rust, TypeScript and Zig 0.17). The rest were written against current documentation and
+                    Every profile includes the same task written idiomatically: {sharedTask.toLowerCase()} Thirteen of the
+                    twenty-seven were run successfully (C, C++, C#, Erlang/OTP 26, F#, Java, JavaScript,
+                    OCaml 4.14, Odin, Python, Rust, TypeScript and Zig 0.17). The rest were written against current documentation and
                     checked by hand. If you spot a mistake, I’d like to hear about it.
                 </p>
                 <h3>Other sources</h3>
@@ -1184,6 +1183,7 @@ const sections = [
                     <li>Mündler et al., <a href="https://arxiv.org/abs/2504.09246">Type-Constrained Code Generation with Language Models</a> (PLDI 2025).</li>
                     <li>Cassano et al., <a href="https://arxiv.org/abs/2208.08227">MultiPL-E</a> (2022) and <a href="https://arxiv.org/abs/2308.09895">MultiPL-T</a> (2023), on language models and less common languages.</li>
                     <li><a href="https://devjobsscanner.com/blog/top-8-most-demanded-programming-languages">DevJobsScanner</a>, for job postings by language in 2025.</li>
+                    <li><a href="https://ocaml.org/releases">OCaml releases</a> and <a href="https://www.erlang.org/downloads/29">Erlang/OTP 29 release notes</a>.</li>
                 </ul>
                 <p>
                     Data as of {formatDate(post.date)}. Languages move quickly, and so will some of these numbers.

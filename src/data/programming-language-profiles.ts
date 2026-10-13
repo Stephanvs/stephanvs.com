@@ -933,6 +933,48 @@ for (customer, total) in sort(collect(totals); by = last, rev = true)
 end`
     }
   },
+  erlang: {
+    summary:
+      'Joe Armstrong, Robert Virding and Mike Williams developed Erlang at Ericsson for telephone systems that had to keep running through failures. Its lightweight processes, message passing and OTP libraries now support messaging services, databases and distributed backends. Elixir and Gleam share its BEAM runtime.',
+    idea: 'Isolate failures in small processes, pass messages between them, and let supervisors restart the parts that fail.',
+    strengths: [
+      'OTP provides established patterns for supervision, servers and application lifecycles.',
+      'Lightweight processes have separate heaps and communicate without shared mutable state.',
+      'Built-in support for distributed nodes, remote inspection and hot code loading.'
+    ],
+    weaknesses: [
+      'Dynamic types leave many mistakes to runtime; Dialyzer catches only some of them.',
+      'CPU-heavy work is slower than in languages compiled for numerical workloads.',
+      'A small hiring pool and unfamiliar syntax for most developers.'
+    ],
+    reachFor: 'Messaging, telecoms, distributed backends, and services that must recover from partial failures.',
+    avoid: 'Numerical computing, GUI applications, or hard real-time systems with strict execution deadlines.',
+    latest: 'Erlang/OTP 29.1.1 (September 2026)',
+    recent: 'OTP 29 introduced experimental native records and multi-valued comprehensions, improved the JIT, and added support for testing examples in module documentation.',
+    snippet: {
+      lang: 'erlang',
+      code: String.raw`#!/usr/bin/env escript
+
+main(_) ->
+    Orders = [
+        #{customer => "ada", amount => 120, paid => true},
+        #{customer => "grace", amount => 75, paid => true},
+        #{customer => "ada", amount => 30, paid => false},
+        #{customer => "linus", amount => 200, paid => true},
+        #{customer => "grace", amount => 25, paid => true}
+    ],
+    Totals = lists:foldl(
+        fun(#{paid := true, customer := Customer, amount := Amount}, Acc) ->
+                maps:update_with(Customer, fun(Total) -> Total + Amount end, Amount, Acc);
+           (_, Acc) -> Acc
+        end,
+        #{}, Orders),
+    Ranked = lists:sort(fun({_, A}, {_, B}) -> A >= B end, maps:to_list(Totals)),
+    lists:foreach(fun({Customer, Total}) ->
+        io:format("~s ~B~n", [Customer, Total])
+    end, Ranked).`
+    }
+  },
   haskell: {
     summary:
       'Haskell was designed by a committee in 1990 to consolidate research on lazy functional languages. Its influence far exceeds its usage: type classes, monads and much of what makes Rust, Swift, Scala and modern C# expressive can be traced back to it.',
@@ -973,6 +1015,50 @@ main = mapM_ (\(name, total) -> putStrLn (name ++ " " ++ show total)) ranked
   where
     totals = Map.fromListWith (+) [(customer o, amount o) | o <- orders, paid o]
     ranked = sortOn (Down . snd) (Map.toList totals)`
+    }
+  },
+  ocaml: {
+    summary:
+      'Xavier Leroy and colleagues at INRIA developed OCaml from the Caml branch of ML, adding an object system in 1996. It combines inferred static types and pattern matching with native compilation and strict evaluation. It is used for compilers, program analysis and financial systems, and directly influenced F#.',
+    idea: 'Describe data with variants and records, handle each case with pattern matching, and use modules to organise larger programs.',
+    strengths: [
+      'Type inference and algebraic data types catch mistakes with few annotations.',
+      'Native compilation and strict evaluation make performance easier to predict than in a lazy language.',
+      'Modules and functors support reusable libraries with explicit interfaces.'
+    ],
+    weaknesses: [
+      'A smaller library ecosystem and hiring pool than the mainstream languages.',
+      'Advanced modules, objects and polymorphic variants take time to learn.',
+      'Multicore code can still have data races; the type checker does not enforce ownership.'
+    ],
+    reachFor: 'Compilers, static analysis, financial systems, and typed backend or command-line tools.',
+    avoid: 'Mobile interfaces, hard real-time code, or teams that need a large hiring pool.',
+    latest: 'OCaml 5.5.1 (September 2026)',
+    recent: 'OCaml 5 brought multicore domains and effect handlers. Version 5.5 added module-dependent functions and a relocatable compiler; 5.5.1 fixes bugs and hardens Marshal.',
+    snippet: {
+      lang: 'ocaml',
+      code: String.raw`module Totals = Map.Make (String)
+
+type order = { customer : string; amount : int; paid : bool }
+
+let orders = [
+  { customer = "ada"; amount = 120; paid = true };
+  { customer = "grace"; amount = 75; paid = true };
+  { customer = "ada"; amount = 30; paid = false };
+  { customer = "linus"; amount = 200; paid = true };
+  { customer = "grace"; amount = 25; paid = true };
+]
+
+let () =
+  orders
+  |> List.fold_left (fun totals order ->
+       if not order.paid then totals
+       else Totals.update order.customer
+         (fun current -> Some (Option.value current ~default:0 + order.amount))
+         totals) Totals.empty
+  |> Totals.bindings
+  |> List.sort (fun (_, a) (_, b) -> Int.compare b a)
+  |> List.iter (fun (customer, total) -> Printf.printf "%s %d\n" customer total)`
     }
   },
   scala: {

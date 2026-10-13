@@ -233,12 +233,12 @@ export const ancestors: Ancestor[] = [
   { id: 'simula', name: 'Simula', year: 1967, family: 'application' },
   { id: 'pascal', name: 'Pascal', year: 1970, family: 'application' },
   { id: 'smalltalk', name: 'Smalltalk', year: 1972, family: 'dynamic' },
+  { id: 'prolog', name: 'Prolog', year: 1972, family: 'functional' },
   { id: 'ml', name: 'ML', year: 1973, family: 'functional' },
   { id: 'scheme', name: 'Scheme', year: 1975, family: 'functional' },
   { id: 's', name: 'S', year: 1976, family: 'scientific' },
   { id: 'objc', name: 'Objective-C', year: 1984, family: 'application' },
   { id: 'miranda', name: 'Miranda', year: 1985, family: 'functional' },
-  { id: 'erlang', name: 'Erlang', year: 1986, family: 'functional' },
   { id: 'perl', name: 'Perl', year: 1987, family: 'dynamic' },
   { id: 'self', name: 'Self', year: 1987, family: 'dynamic' },
   { id: 'abc', name: 'ABC', year: 1987, family: 'dynamic' }
@@ -335,7 +335,7 @@ const languageSources: LanguageSource[] = [
     paradigms: ['Multi-paradigm', 'Functional', 'Imperative', 'Generic'],
     packages: 'Cargo · crates.io',
     domains: { systems: 3, cli: 3, embedded: 2, backend: 2, distributed: 2, games: 1, frontend: 1, desktop: 1 },
-    influences: ['cpp', 'ml', 'haskell', 'erlang'],
+    influences: ['cpp', 'ml', 'ocaml', 'haskell', 'erlang'],
     scores: [10, 10, 3, 8, 9, 7, 10, 9, 9, 5, 9],
     ranks: { tiobe: 10, pypl: 8, redmonk: 20, ieee: 14, jetbrains: 13, stackoverflow: 12 },
     usage: 18.0, admired: 67.4
@@ -597,6 +597,22 @@ const languageSources: LanguageSource[] = [
     usage: 1.5, admired: 47.4
   },
   {
+    id: 'erlang', symbol: 'Er', name: 'Erlang', family: 'functional', year: 1986, creator: 'Joe Armstrong, Robert Virding and Mike Williams, Ericsson',
+    tagline: 'Isolated processes and supervision for systems that must stay up.',
+    typingKind: 'dynamic', typing: 'Dynamic, strong; optional specs checked by Dialyzer',
+    memoryKind: 'gc', memory: 'Garbage collected, per lightweight process',
+    runtimeKind: 'managed', runtime: 'BEAM (the Erlang VM), with a JIT',
+    concurrency: 'Lightweight processes, message passing and OTP supervision',
+    nulls: 'No null; atoms such as undefined and tagged tuples by convention',
+    paradigms: ['Functional', 'Concurrent', 'Distributed'],
+    packages: 'rebar3 · Hex',
+    domains: { backend: 3, distributed: 3, embedded: 1 },
+    influences: ['prolog'],
+    scores: [4, 6, 5, 6, 10, 6, 7, 4, 10, 3, 3],
+    ranks: { tiobe: 51, ieee: 52, stackoverflow: 38 },
+    usage: 1.5, admired: 49.1
+  },
+  {
     id: 'haskell', symbol: 'Hs', name: 'Haskell', family: 'functional', year: 1990, creator: 'A committee of researchers',
     tagline: 'Pure, lazy, and the source of half of modern language design.',
     typingKind: 'static', typing: 'Static, strong, inferred; type classes',
@@ -611,6 +627,22 @@ const languageSources: LanguageSource[] = [
     scores: [7, 9, 2, 10, 8, 5, 5, 4, 6, 2, 3],
     ranks: { tiobe: 41, pypl: 27, ieee: 30, stackoverflow: 34 },
     usage: 2.3, admired: 47.8
+  },
+  {
+    id: 'ocaml', symbol: 'Oc', name: 'OCaml', family: 'functional', year: 1996, creator: 'Xavier Leroy and colleagues, INRIA',
+    tagline: 'Inferred types, pattern matching and native code in the ML tradition.',
+    typingKind: 'static', typing: 'Static, strong, inferred; algebraic data types and modules',
+    memoryKind: 'gc', memory: 'Garbage collected; strict evaluation by default',
+    runtimeKind: 'native', runtime: 'Native code or bytecode; JavaScript through js_of_ocaml',
+    concurrency: 'Multicore domains since OCaml 5; effect handlers and Eio for concurrency',
+    nulls: 'No null: option values',
+    paradigms: ['Functional-first', 'Imperative', 'Object-oriented'],
+    packages: 'opam, Dune · opam repository',
+    domains: { cli: 3, backend: 2, systems: 1, frontend: 1, data: 1, science: 1 },
+    influences: ['ml'],
+    scores: [8, 8, 5, 9, 7, 5, 7, 6, 8, 3, 5],
+    ranks: { tiobe: 26, ieee: 40, stackoverflow: 44 },
+    usage: 1.2, admired: 51.5
   },
   {
     id: 'scala', symbol: 'Sc', name: 'Scala', family: 'functional', year: 2004, creator: 'Martin Odersky, EPFL',
@@ -639,7 +671,7 @@ const languageSources: LanguageSource[] = [
     paradigms: ['Functional-first', 'Object-oriented'],
     packages: 'dotnet CLI, Paket · NuGet',
     domains: { backend: 2, data: 1, science: 1, scripting: 1, frontend: 1 },
-    influences: ['ml', 'csharp', 'haskell'],
+    influences: ['ml', 'ocaml', 'csharp', 'haskell'],
     scores: [7, 8, 6, 9, 7, 7, 7, 6, 8, 2, 3],
     ranks: { tiobe: 51, stackoverflow: 43 },
     usage: 1.2, admired: 48.3
@@ -783,13 +815,13 @@ const facetNotes: Record<FacetKey, string> = {
   performance:
     'Five languages share the top: C, C++, Rust, Zig and Odin compile ahead of time and have no garbage collector. The big cluster at 7–8 is the managed mainstream, within a small factor of C for most server work. The real story is the gap to the bottom. In Pereira et al.’s benchmark study, Python and Ruby took 60 to 70 times as long as C. That is why their fast libraries are written in C, C++ or Rust.',
   safety:
-    'Safety splits on memory first. Only C, C++, Zig and Odin let an ordinary bug corrupt memory by default. Microsoft and Google’s Chromium team both found that memory-safety bugs account for about 70% of their serious security vulnerabilities. Rust is alone at 10: memory-safe without a garbage collector, and data races don’t compile. The functional languages and Swift sit high because null doesn’t exist and data is immutable by default.',
+    'Safety splits on memory first. Only C, C++, Zig and Odin let an ordinary bug corrupt memory by default. Microsoft and Google’s Chromium team both found that memory-safety bugs account for about 70% of their serious security vulnerabilities. Rust is alone at 10: memory-safe without a garbage collector, and data races don’t compile. Haskell, OCaml and Gleam use option types instead of null; Swift uses optionals.',
   approachability:
     'Python and Go lead for different reasons. Python reads like pseudocode; Go simply has very little language to learn. The steep end (C++, Haskell, Rust) is where a language asks for a new mental model, not just new syntax.',
   expressiveness:
     'Expressiveness and approachability usually pull against each other, but Python, Ruby and Kotlin manage plenty of both. Go is plain on purpose: its designers argue that code is read far more often than it is written, by people who didn’t write it.',
   concurrency:
-    'Elixir, Gleam and Go were designed around concurrency from day one, and it shows. Python, Ruby and PHP grew up with one thread per process and are retrofitting: Python’s free-threaded build, Ruby’s Ractors, PHP’s Fibers. Java’s virtual threads are the most successful retrofit so far.',
+    'Erlang, Elixir, Gleam and Go were designed around concurrency from day one, and it shows. Python, Ruby and PHP grew up with one thread per process and are retrofitting: Python’s free-threaded build, Ruby’s Ractors, PHP’s Fibers. Java’s virtual threads are the most successful retrofit so far.',
   ecosystem:
     'Ecosystems compound. Python, JavaScript, TypeScript and Java score 10 because decades of libraries make the next one easier to justify. Languages on a shared runtime borrow an ecosystem: Kotlin, Scala and Clojure get the JVM’s, F# gets .NET’s, Elixir and Gleam get Erlang’s.',
   tooling:
@@ -799,7 +831,7 @@ const facetNotes: Record<FacetKey, string> = {
   stability:
     'Stability is a deliberate choice. Go has its compatibility promise, Java and C keep thirty-year-old code running, and Clojure is famous for its restraint. At the other end, Zig is pre-1.0 and says so, while Scala and Swift have both put users through painful migrations.',
   jobs:
-    'Jobs follow the installed base, not admiration. Python, Java and JavaScript lead every jobs ranking. Rust is the most admired language in this lineup, but it sits 15th on IEEE Spectrum’s jobs list and outside the top eight on job boards.',
+    'Jobs follow the installed base, not admiration. Python, Java and JavaScript lead every jobs ranking. Rust is widely admired, but it sits 15th on IEEE Spectrum’s jobs list and outside the top eight on job boards.',
   momentum:
     'TypeScript has the most momentum: first on GitHub by contributors in 2025 and first on JetBrains’ Language Promise Index. Rust, Python, Zig and Gleam are rising too. Ruby, Scala and JavaScript itself are drifting, mostly towards their own successors.'
 };
@@ -827,7 +859,7 @@ export const lenses: Lens[] = [
     max: 10.5,
     ticks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     unit: 'score',
-    note: 'This is the average position across seven independent rankings, rescaled so that first place everywhere would score 10. No single survey decides it. Python leads almost everywhere. The interesting cases are the disagreements, which get their own chart further down.'
+    note: 'This is the average position across seven published rankings, rescaled so that first place everywhere would score 10. No single survey decides it. Python leads almost everywhere. The interesting cases are the disagreements, which get their own chart further down.'
   },
   {
     key: 'admired',
@@ -851,7 +883,7 @@ export const lenses: Lens[] = [
     max: 2020,
     ticks: [1970, 1980, 1990, 2000, 2010, 2020],
     unit: 'year',
-    note: 'Only four of these languages predate the web. Two waves account for most of the rest: seven arrived between 1991 and 1995, in the scripting and web boom, and eleven between 2009 and 2016, most of them designed to fix what the previous generation got wrong.'
+    note: 'Four of these languages appeared before 1991. Two waves account for most of the rest: seven arrived between 1991 and 1995, in the scripting and web boom, and eleven between 2009 and 2016, most of them designed to fix what the previous generation got wrong.'
   }
 ];
 
@@ -920,8 +952,9 @@ export const matchups: Matchup[] = [
   { name: 'Python vs Julia vs R', ids: ['python', 'julia', 'r'] },
   { name: 'Swift vs Kotlin vs Dart', ids: ['swift', 'kotlin', 'dart'] },
   { name: 'Python vs Ruby vs PHP', ids: ['python', 'ruby', 'php'] },
-  { name: 'Elixir vs Gleam', ids: ['elixir', 'gleam'] },
-  { name: 'Haskell vs F# vs Scala', ids: ['haskell', 'fsharp', 'scala'] }
+  { name: 'Erlang vs Elixir vs Gleam', ids: ['erlang', 'elixir', 'gleam'] },
+  { name: 'Haskell vs F# vs Scala', ids: ['haskell', 'fsharp', 'scala'] },
+  { name: 'OCaml vs F# vs Haskell', ids: ['ocaml', 'fsharp', 'haskell'] }
 ];
 
 export interface Project {

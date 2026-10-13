@@ -22,7 +22,7 @@ export const periodicTablePost: PostSummary = {
 export const languageSpectrumPost: PostSummary = {
   href: '/grand-programming-languages-spectrum/',
   title: 'The Grand Programming Languages Spectrum',
-  excerpt: 'Twenty-five languages scored on eleven facets and cross-checked against seven popularity rankings, with charts you can explore.',
+  excerpt: 'Twenty-seven languages scored on eleven facets and cross-checked against seven popularity rankings, with charts you can explore.',
   date: new Date('2026-10-12'),
   image: languageSpectrumPreview
 };
