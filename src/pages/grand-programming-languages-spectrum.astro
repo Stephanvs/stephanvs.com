@@ -209,9 +209,9 @@ const sections = [
 <Layout title={post.title} description={post.excerpt}>
     <article class="ls py-12 lg:py-20">
         <header class="max-w-4xl">
-            <p class="font-mono text-xs uppercase tracking-widest text-orange-700">Interactive field guide</p>
+            <p class="font-mono text-xs uppercase tracking-widest text-accent">Interactive field guide</p>
             <h1 class="mt-5 font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl">{post.title}</h1>
-            <span class="mt-6 block font-mono text-xs uppercase tracking-wide text-stone-600">
+            <span class="mt-6 block font-mono text-xs uppercase tracking-wide text-quiet">
                 {formatDate(post.date)} · programming languages, data
             </span>
             <div class="prose prose-stone mt-8 max-w-3xl md:prose-lg prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700">
@@ -1068,7 +1068,7 @@ const sections = [
                                                 <span>{language.name}</span>
                                                 <span>{lineCount(profile.snippet.code)} lines</span>
                                             </figcaption>
-                                            <Code code={profile.snippet.code} lang={profile.snippet.lang as never} theme="vitesse-light" />
+                                            <Code code={profile.snippet.code} lang={profile.snippet.lang as never} themes={{ light: 'vitesse-light', dark: 'vitesse-dark' }} defaultColor="light" />
                                         </figure>
 
                                         <div class="ls-profile__links">
