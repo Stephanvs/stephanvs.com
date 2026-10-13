@@ -23,6 +23,16 @@ bun run dev
 bun run build
 ```
 
+## Favicons
+
+The serif `S/` artwork is saved in `src/assets/favicon.png`. To regenerate the browser, Apple touch, and Android icons, run:
+
+```bash
+bun run generate:favicons
+```
+
+The generated icons are committed in `public/`. The shared layout references the browser and Apple icons, and `public/site.webmanifest` references the Android icons.
+
 ## Cloudflare Pages
 
 Set `BUN_VERSION` to `1.4.3` in the Pages project's environment variables for both production and preview builds.
