@@ -1,28 +1,26 @@
 ---
 title: Popcorn for TeamCity
-excerpt: Support and connection help for the independent TeamCity Cloud client for iPhone and iPad.
+excerpt: Support and connection help for the independent TeamCity client for iPhone and iPad.
 ---
 
-Popcorn lets you check TeamCity Cloud builds, read logs, investigate failures, and start or cancel builds from iPhone or iPad. It is a one-time app purchase with no subscription or in-app purchases. TeamCity hosting is separate.
+Popcorn lets you check builds on TeamCity Cloud and self-hosted TeamCity servers over HTTPS, read logs, investigate failures, and start or cancel builds from iPhone or iPad. It is a one-time app purchase with no subscription or in-app purchases.
 
 ## Support
 
 Email [support@stephanvs.com](mailto:support@stephanvs.com) for help. Include your app version, iOS version, and a description of the problem. Please remove access tokens, passwords, confidential project names, and sensitive build information from anything you send.
 
-## Connect to TeamCity Cloud
+## Connect to TeamCity
 
-1. Open your TeamCity Cloud instance in a browser and sign in.
+1. Open your TeamCity server in a browser and sign in.
 2. Create a personal access token in your TeamCity profile with the permissions you need. Your TeamCity administrator may need to enable access or grant permissions.
-3. In Popcorn, enter your instance name, for example `my-team` for `https://my-team.teamcity.com`. HTTPS and `.teamcity.com` are added automatically.
+3. For TeamCity Cloud, enter your instance name, for example `my-team` for `https://my-team.teamcity.com`. HTTPS and `.teamcity.com` are added automatically. For a self-hosted server, enter its HTTPS URL.
 4. Enter your token and connect. Tokens are stored in the iOS Keychain and sent directly to your TeamCity server.
 
-You need an existing TeamCity Cloud account, an internet connection, and iOS 17 or later. Popcorn does not include a TeamCity account or hosting.
-
-## Common questions
+You need an existing TeamCity Cloud account or a self-hosted TeamCity server over HTTPS, an internet connection, and iOS 17 or later. Plain HTTP is not supported.
 
 ### I cannot connect
 
-Check that your instance opens in a browser, that the instance name is correct, and that your personal access token has not expired or been revoked. Enter just the part before `.teamcity.com`. Confirm your token's permissions with your administrator.
+Check that your server opens in a browser over HTTPS, that the address is correct, and that your personal access token has not expired or been revoked. For TeamCity Cloud, enter just the part before `.teamcity.com`. Confirm your token's permissions with your administrator.
 
 ### A build action is unavailable
 
