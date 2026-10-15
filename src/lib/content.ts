@@ -1,7 +1,7 @@
 import type { ImageMetadata } from 'astro';
 import { getCollection } from 'astro:content';
 import periodicTablePreview from '../assets/periodic-table-of-software-architecture.png';
-import languageSpectrumPreview from '../assets/periodic-table-of-software-architecture.png';
+import languageSpectrumPreview from '../assets/grand-programming-languages-spectrum.png';
 
 export interface PostSummary {
   href: string;
