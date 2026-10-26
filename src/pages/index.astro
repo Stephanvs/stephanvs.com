@@ -15,32 +15,38 @@ if (!home) throw new Error("Home content was not found");
 const { Content } = await render(home);
 const posts = (await getPostSummaries()).slice(0, 3);
 const works = (await getCollection("work")).slice(0, 2);
+const headingLines = home.data.title.split("\n");
 ---
 
 <Layout title="Home" description={home.data.excerpt}>
-    <section class="grid gap-12 border-b border-line py-16 md:py-24 lg:grid-cols-4 lg:items-end lg:gap-16 lg:py-32">
-        <div class="lg:col-span-3">
-            <p class="font-mono text-xs uppercase tracking-widest text-accent">
+    <section class="grid gap-12 border-b border-line py-16 md:py-24 lg:grid-cols-[minmax(0,680px)_15rem] lg:items-end lg:justify-between lg:gap-16">
+        <div>
+            <p class="hero-rise font-mono text-xs uppercase tracking-widest text-accent">
                 Independent software architect &rarr; Netherlands
             </p>
-            <h1 class="mt-5 max-w-5xl font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">{home.data.title}</h1>
-            <p class="mt-7 max-w-3xl text-xl leading-relaxed text-muted md:text-2xl">{home.data.excerpt}</p>
-            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a class="inline-flex justify-center border border-fill bg-fill px-4 py-3 font-mono text-xs uppercase tracking-wide text-fill-ink no-underline transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" href="/work"
-                    >View selected work</a
+            <h1 class="hero-rise hero-heading mt-6 max-w-[680px] pb-1 font-serif text-4xl tracking-tighter text-balance sm:text-5xl lg:text-6xl" style="--rise-delay: 80ms">
+                {headingLines.map((line) => <span class="block">{line}</span>)}
+            </h1>
+            <p class="hero-rise mt-6 max-w-[680px] text-xl text-pretty text-muted md:text-2xl" style="--rise-delay: 160ms">{home.data.excerpt}</p>
+            <div class="hero-rise mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4" style="--rise-delay: 240ms">
+                <a class="inline-flex justify-center bg-fill px-3 py-2 text-base font-semibold text-fill-ink no-underline transition-[background-color,color,scale] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-accent hover:text-accent-ink active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" href="mailto:stephan@hayman.io?subject=Architecture%20conversation"
+                    >Talk through your architecture</a
                 >
-                <a class="inline-flex justify-center border border-line px-4 py-3 font-mono text-xs uppercase tracking-wide no-underline transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" href="mailto:stephan@hayman.io"
-                    >Start a conversation</a
-                >
+                <span class="text-sm text-quiet">stephan@hayman.io</span>
             </div>
+            <p class="hero-rise mt-8 text-sm text-quiet" style="--rise-delay: 320ms">
+                Case studies for <span class="font-semibold text-ink">AFAS</span> and <span class="font-semibold text-ink">Fudura</span>
+            </p>
         </div>
-        <aside class="border-t border-line pt-4 lg:col-start-4">
+        <aside class="hero-rise" style="--rise-delay: 400ms">
             <Image
                 src={avatar}
                 alt="Portrait of Stephan van Stekelenburg"
-                class="mb-4 aspect-square w-full max-w-60 border border-line bg-raised object-cover grayscale contrast-125"
+                loading="eager"
+                fetchpriority="high"
+                class="aspect-square w-full max-w-60 border border-line bg-raised object-cover grayscale contrast-125"
             />
-            <p class="text-sm leading-relaxed text-quiet">
+            <p class="mt-4 text-sm text-quiet text-pretty">
                 Architecture should make change less expensive, not merely make
                 diagrams more impressive.
             </p>
