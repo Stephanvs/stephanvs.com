@@ -1,11 +1,10 @@
 ---
-import { Image } from "astro:assets";
 import { getCollection, render } from "astro:content";
 import Card from "../components/Card.astro";
+import Hero from "../components/Hero.astro";
 import SectionHead from "../components/SectionHead.astro";
 import Layout from "../layouts/Layout.astro";
 import { contentSlug, formatDate, getPostSummaries } from "../lib/content";
-import avatar from "../../content/pages/home/stephanvs.png";
 
 const pages = await getCollection("pages");
 const home = pages.find((page) => contentSlug(page.id) === "home");
@@ -19,39 +18,7 @@ const headingLines = home.data.title.split("\n");
 ---
 
 <Layout title="Home" description={home.data.excerpt}>
-    <section class="grid gap-12 border-b border-line py-16 md:py-24 lg:grid-cols-[minmax(0,680px)_15rem] lg:items-end lg:justify-between lg:gap-16">
-        <div>
-            <p class="hero-rise font-mono text-xs uppercase tracking-widest text-accent">
-                Independent software architect &rarr; Netherlands
-            </p>
-            <h1 class="hero-rise hero-heading mt-6 max-w-[680px] pb-1 font-serif text-4xl tracking-tighter text-balance sm:text-5xl lg:text-6xl" style="--rise-delay: 80ms">
-                {headingLines.map((line) => <span class="block">{line}</span>)}
-            </h1>
-            <p class="hero-rise mt-6 max-w-[680px] text-xl text-pretty text-muted md:text-2xl" style="--rise-delay: 160ms">{home.data.excerpt}</p>
-            <div class="hero-rise mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4" style="--rise-delay: 240ms">
-                <a class="inline-flex justify-center bg-fill px-3 py-2 text-base font-semibold text-fill-ink no-underline transition-[background-color,color,scale] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-accent hover:text-accent-ink active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" href="mailto:stephan@hayman.io?subject=Architecture%20conversation"
-                    >Talk through your architecture</a
-                >
-                <span class="text-sm text-quiet">stephan@hayman.io</span>
-            </div>
-            <p class="hero-rise mt-8 text-sm text-quiet" style="--rise-delay: 320ms">
-                Case studies for <span class="font-semibold text-ink">AFAS</span> and <span class="font-semibold text-ink">Fudura</span>
-            </p>
-        </div>
-        <aside class="hero-rise" style="--rise-delay: 400ms">
-            <Image
-                src={avatar}
-                alt="Portrait of Stephan van Stekelenburg"
-                loading="eager"
-                fetchpriority="high"
-                class="aspect-square w-full max-w-60 border border-line bg-raised object-cover grayscale contrast-125"
-            />
-            <p class="mt-4 text-sm text-quiet text-pretty">
-                Architecture should make change less expensive, not merely make
-                diagrams more impressive.
-            </p>
-        </aside>
-    </section>
+    <Hero headingLines={headingLines} excerpt={home.data.excerpt} />
 
     <section class="grid gap-8 border-b border-line py-16 lg:grid-cols-3 lg:gap-16 lg:py-20">
         <p class="font-mono text-xs uppercase tracking-widest text-accent">Approach / 01</p>

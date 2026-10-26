@@ -1,0 +1,476 @@
+---
+import "@fontsource-variable/newsreader/opsz.css";
+import { Image } from "astro:assets";
+import portrait from "../../content/pages/home/stephanvs.png";
+import { canvas, contexts, couplings, messages, route, services, type ContextId, type Point } from "../lib/hero-system";
+
+interface Props {
+	headingLines: string[];
+	excerpt?: string;
+}
+
+const { headingLines, excerpt } = Astro.props;
+
+const contextIds = Object.keys(contexts) as ContextId[];
+const px = (n: number) => `${n}px`;
+const pct = (n: number, of: number) => `${(n / of) * 100}%`;
+const at = ([x, y]: Point) => ({ "--x": pct(x, canvas.width), "--y": pct(y, canvas.height) });
+const segment = ([ax, ay]: Point, [bx, by]: Point) => `M${ax} ${ay}L${bx} ${by}`;
+
+const scatteredCutMs = (i: number) => (((i * 29) % couplings.length) / couplings.length) * 360;
+const alternatingSnap = (i: number) => (i % 2 ? 1 : -1);
+
+const cuts = couplings.map((coupling, i) => ({
+	d: segment(coupling.a.tangled, coupling.b.tangled),
+	style: { "--cut": `${scatteredCutMs(i)}ms`, "--snap": alternatingSnap(i) }
+}));
+
+const clusters = contextIds.map((id, i) => ({
+	id,
+	...contexts[id],
+	style: { "--i": i },
+	links: couplings.filter((c) => c.cohesive && c.a.context === id).map((c) => segment(c.a.resolved, c.b.resolved)),
+	members: services
+		.filter((s) => s.context === id)
+		.map(({ tangled, resolved }, j) => ({ "--tx": px(tangled[0]), "--ty": px(tangled[1]), "--rx": px(resolved[0]), "--ry": px(resolved[1]), "--j": j }))
+}));
+
+const channels = messages.map((message) => {
+	const { start, end } = route(message);
+	const [ux, uy] = [Math.sign(end[0] - start[0]), Math.sign(end[1] - start[1])];
+	const back = (along: number, across: number) => `${end[0] - ux * along + uy * across} ${end[1] - uy * along + ux * across}`;
+	return {
+		...message,
+		lane: segment(start, end),
+		arrow: `M${back(6, 3.5)}L${end[0]} ${end[1]}L${back(6, -3.5)}`,
+		axis: uy === 0 ? "x" : "y",
+		middle: [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2] as Point,
+		travel: { "--x1": px(start[0]), "--y1": px(start[1]), "--x2": px(end[0]), "--y2": px(end[1]), "--every": `${message.everySeconds}s`, "--phase": `${message.phaseSeconds}s` }
+	};
+});
+
+const tangledReadout = `${services.length} services · ${couplings.length} couplings`;
+const resolvedReadout = `${contextIds.length} contexts · ${messages.length} message paths`;
+---
+
+<section class="grid gap-12 border-b border-line pt-12 pb-16 md:pt-16 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] lg:items-center lg:gap-14 lg:pt-12 lg:pb-14 xl:pt-16 xl:pb-20">
+	<div>
+		<p class="font-mono text-xs uppercase tracking-widest text-accent">Independent software architect &rarr; Netherlands</p>
+		<h1 class="headline mt-6 text-[2.25rem] sm:text-[3.25rem] lg:text-[clamp(2.5rem,4.05vw,3.5rem)]">
+			{headingLines.map((line) => <span class="block">{line}</span>)}
+		</h1>
+		{excerpt && <p class="mt-6 max-w-[36rem] text-xl text-pretty text-muted md:text-2xl">{excerpt}</p>}
+		<div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+			<a
+				class="inline-flex justify-center bg-fill px-3 py-2 text-base font-semibold text-fill-ink no-underline transition-[background-color,color,scale] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-accent hover:text-accent-ink active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+				href="mailto:stephan@hayman.io?subject=Architecture%20conversation">Talk through your architecture</a
+			>
+			<span class="text-sm text-quiet">stephan@hayman.io</span>
+		</div>
+		<p class="mt-8 text-sm text-quiet">
+			Case studies for <a class="case-link" href="/work/afas-next/">AFAS</a> and <a class="case-link" href="/work/fudura-metering-as-a-service/">Fudura</a>
+		</p>
+	</div>
+
+	<div class="sheet border border-line bg-raised" data-system>
+		<div class="flex items-center justify-between gap-4 border-b border-line px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-quiet" aria-hidden="true">
+			<span><span class="text-ink">Fig. 1</span><span class="max-sm:hidden"> &nbsp;Context map</span></span>
+			<span class="readout">
+				<span class="readout-tangled">{tangledReadout}</span>
+				<span class="readout-resolved">{resolvedReadout}</span>
+			</span>
+		</div>
+
+		<div class="plot" aria-hidden="true">
+			<svg class="system" viewBox={`0 0 ${canvas.width} ${canvas.height}`} width={canvas.width} height={canvas.height}>
+				<g>
+					{cuts.map((cut) => <path class="cut" pathLength="1" d={cut.d} style={cut.style} />)}
+				</g>
+				{
+					clusters.map((cluster) => (
+						<g data-ctx={cluster.id} style={cluster.style}>
+							<rect class="frame" data-hit={cluster.id} x={cluster.frame.x} y={cluster.frame.y} width={cluster.frame.w} height={cluster.frame.h} />
+							{cluster.links.map((d) => (
+								<path class="link" pathLength="1" d={d} />
+							))}
+							{cluster.members.map((style) => (
+								<rect class="service" x="-4.5" y="-4.5" width="9" height="9" style={style} />
+							))}
+						</g>
+					))
+				}
+				{
+					channels.map((channel) => (
+						<g data-ctx={`${channel.from} ${channel.to}`}>
+							<path class="lane" d={channel.lane} />
+							<path class="arrow" d={channel.arrow} />
+							<rect class="message" x="-2.5" y="-2.5" width="5" height="5" style={channel.travel} />
+						</g>
+					))
+				}
+			</svg>
+
+			{
+				clusters.map((cluster) => (
+					<span class="label context-label" data-ctx={cluster.id} style={{ ...at([cluster.frame.x, cluster.frame.y]), ...cluster.style }}>
+						<span>{cluster.label}</span>
+					</span>
+				))
+			}
+			{
+				channels.map((channel) => (
+					<span class="label event-label" data-ctx={`${channel.from} ${channel.to}`} data-axis={channel.axis} style={at(channel.middle)}>
+						<span>{channel.event}</span>
+					</span>
+				))
+			}
+		</div>
+
+		<div class="grid grid-cols-[auto_minmax(0,1fr)] border-t border-line">
+			<Image
+				src={portrait}
+				alt="Portrait of Stephan van Stekelenburg"
+				width={240}
+				height={240}
+				loading="eager"
+				class="h-full min-h-24 w-24 border-r border-line object-cover object-top grayscale contrast-125 sm:min-h-28 sm:w-28"
+			/>
+			<div class="flex flex-col justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4">
+				<p class="quote text-pretty text-copy">Architecture should make change less expensive, not merely make diagrams more impressive.</p>
+				<p class="font-mono text-[11px] uppercase tracking-wider text-quiet">Stephan van Stekelenburg</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<script is:inline>
+	(() => {
+		const root = document.querySelector("[data-system]");
+		if (!root) return;
+
+		if ("IntersectionObserver" in window) {
+			let started = false;
+			root.toggleAttribute("data-waiting", true);
+			new IntersectionObserver(
+				([entry]) => {
+					started ||= entry.intersectionRatio >= 0.4;
+					root.toggleAttribute("data-waiting", !started || !entry.isIntersecting);
+				},
+				{ threshold: [0, 0.4] }
+			).observe(root.querySelector(".plot"));
+		}
+
+		if (!matchMedia("(hover: hover)").matches) return;
+		const focus = (id) => {
+			root.toggleAttribute("data-focus", Boolean(id));
+			for (const el of root.querySelectorAll("[data-ctx]")) {
+				el.classList.toggle("is-lit", Boolean(id) && el.dataset.ctx.split(" ").includes(id));
+			}
+		};
+		root.addEventListener("pointerover", (event) => focus(event.target.closest("[data-hit]")?.dataset.hit));
+		root.addEventListener("pointerleave", () => focus(null));
+	})();
+</script>
+
+<style>
+	.headline {
+		font-family: "Newsreader Variable", var(--font-serif);
+		font-weight: 400;
+		letter-spacing: -0.022em;
+		line-height: 1.02;
+		text-wrap: balance;
+	}
+
+	.quote {
+		font-family: "Newsreader Variable", var(--font-serif);
+		font-size: 1.0625rem;
+		line-height: 1.35;
+	}
+
+	.case-link {
+		font-weight: 600;
+		color: var(--site-ink);
+		text-decoration: underline;
+		text-decoration-color: var(--site-line-soft);
+		text-underline-offset: 4px;
+		transition:
+			color 200ms,
+			text-decoration-color 200ms;
+	}
+
+	.case-link:hover {
+		color: var(--site-accent);
+		text-decoration-color: var(--site-accent);
+	}
+
+	.case-link:focus-visible {
+		outline: 2px solid var(--site-accent);
+		outline-offset: 4px;
+	}
+
+	.sheet {
+		container-type: inline-size;
+		max-width: 42rem;
+	}
+
+	.readout {
+		display: grid;
+		text-align: right;
+	}
+
+	.readout > * {
+		grid-area: 1 / 1;
+	}
+
+	.readout-tangled {
+		opacity: 0;
+	}
+
+	.plot {
+		position: relative;
+		background-image: radial-gradient(circle, var(--site-line-soft) 0.8px, transparent 1.2px);
+		background-size: 20px 20px;
+		background-position: 10px 10px;
+	}
+
+	.system {
+		--css-px: 1.1;
+		display: block;
+		width: 100%;
+		height: auto;
+		overflow: visible;
+	}
+
+	@container (max-width: 545px) {
+		.system {
+			--css-px: 1.3;
+		}
+	}
+
+	@container (max-width: 460px) {
+		.system {
+			--css-px: 1.67;
+		}
+	}
+
+	@container (max-width: 360px) {
+		.system {
+			--css-px: 2;
+		}
+	}
+
+	.cut {
+		fill: none;
+		stroke: var(--site-quiet);
+		stroke-width: var(--css-px);
+		stroke-dasharray: 1 1;
+		stroke-dashoffset: var(--snap);
+		opacity: 0;
+	}
+
+	.link {
+		fill: none;
+		stroke: var(--site-quiet);
+		stroke-width: var(--css-px);
+		stroke-dasharray: 1 1;
+		opacity: 0.6;
+	}
+
+	.service {
+		fill: var(--site-raised);
+		stroke: var(--site-ink);
+		stroke-width: calc(1.25 * var(--css-px));
+		transform: translate(var(--rx), var(--ry));
+	}
+
+	.frame {
+		fill: transparent;
+		stroke: var(--site-accent);
+		stroke-width: var(--css-px);
+		shape-rendering: crispEdges;
+		transform-box: fill-box;
+		transform-origin: center;
+		transition: fill 240ms ease-out;
+	}
+
+	.lane {
+		fill: none;
+		stroke: var(--site-muted);
+		stroke-width: var(--css-px);
+		stroke-dasharray: 2 4;
+		shape-rendering: crispEdges;
+	}
+
+	.arrow {
+		fill: none;
+		stroke: var(--site-muted);
+		stroke-width: var(--css-px);
+	}
+
+	.message {
+		fill: var(--site-ink);
+		opacity: 0;
+	}
+
+	.label {
+		position: absolute;
+		left: var(--x);
+		top: var(--y);
+		pointer-events: none;
+		font-family: var(--font-mono);
+		font-size: 10px;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	.label > span {
+		display: inline-block;
+	}
+
+	.context-label {
+		transform: translate(10px, -50%);
+		color: var(--site-accent);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+
+	.context-label > span {
+		padding: 2px 6px;
+		background-color: var(--site-raised);
+	}
+
+	.event-label {
+		color: var(--site-quiet);
+	}
+
+	.event-label[data-axis="x"] {
+		transform: translate(-50%, calc(-100% - 7px));
+	}
+
+	.event-label[data-axis="y"] {
+		transform: translate(9px, -50%);
+	}
+
+	@container (max-width: 33rem) {
+		.event-label {
+			display: none;
+		}
+	}
+
+	[data-ctx] {
+		transition: opacity 240ms ease-out;
+	}
+
+	[data-focus] [data-ctx]:not(.is-lit) {
+		opacity: 0.22;
+	}
+
+	[data-focus] .is-lit > .frame {
+		fill: color-mix(in oklab, var(--site-accent) 7%, transparent);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.system {
+			animation: hero-appear 400ms ease-out backwards;
+		}
+
+		.cut {
+			animation: hero-cut 420ms cubic-bezier(0.6, 0, 0.4, 1) calc(800ms + var(--cut)) backwards;
+		}
+
+		.service {
+			animation: hero-migrate 1300ms cubic-bezier(0.65, 0, 0.35, 1) calc(1050ms + var(--i) * 70ms + var(--j) * 35ms) backwards;
+		}
+
+		.frame {
+			animation: hero-enclose 900ms cubic-bezier(0.22, 1, 0.36, 1) calc(2000ms + var(--i) * 90ms) backwards;
+		}
+
+		.link {
+			animation: hero-draw 500ms ease-out calc(2200ms + var(--i) * 90ms) backwards;
+		}
+
+		.context-label > span {
+			animation: hero-appear 500ms ease-out calc(2250ms + var(--i) * 90ms) backwards;
+		}
+
+		.lane,
+		.arrow,
+		.event-label > span {
+			animation: hero-appear 600ms ease-out 2550ms backwards;
+		}
+
+		.message {
+			animation: hero-travel var(--every) linear calc(2950ms + var(--phase)) infinite backwards;
+		}
+
+		.readout-tangled {
+			animation: hero-vanish 300ms ease-in 1400ms backwards;
+		}
+
+		.readout-resolved {
+			animation: hero-appear 400ms ease-out 1700ms backwards;
+		}
+
+		[data-waiting] * {
+			animation-play-state: paused !important;
+		}
+	}
+
+	@keyframes hero-appear {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes hero-vanish {
+		from {
+			opacity: 1;
+		}
+	}
+
+	@keyframes hero-cut {
+		from {
+			opacity: 0.32;
+			stroke-dashoffset: 0;
+		}
+	}
+
+	@keyframes hero-migrate {
+		from {
+			transform: translate(var(--tx), var(--ty));
+		}
+	}
+
+	@keyframes hero-enclose {
+		from {
+			opacity: 0;
+			transform: scale(1.14);
+		}
+	}
+
+	@keyframes hero-draw {
+		from {
+			stroke-dashoffset: 1;
+		}
+	}
+
+	@keyframes hero-travel {
+		0% {
+			transform: translate(var(--x1), var(--y1));
+			opacity: 0;
+			animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+		}
+		6% {
+			opacity: 1;
+		}
+		44% {
+			opacity: 1;
+		}
+		50%,
+		100% {
+			transform: translate(var(--x2), var(--y2));
+			opacity: 0;
+		}
+	}
+</style>
