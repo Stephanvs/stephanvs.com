@@ -1,0 +1,27 @@
+---
+import Legend from './Legend.astro';
+---
+
+<figure class="kf-widget" data-kf-fusion>
+  <div class="kf-widget__head">
+    <span class="kf-widget__title">Barometer and GPS, error against the truth</span>
+    <Legend items={[{ label: 'Barometer reading', tone: 'second', shape: 'dot' }, { label: 'GPS reading', tone: 'reading', shape: 'dot' }, { label: 'Filter error', tone: 'estimate' }, { label: '2σ', tone: 'estimate', shape: 'band' }]} />
+  </div>
+  <div class="kf-controls">
+    <div class="kf-group" role="group" aria-label="Sensors">
+      <label class="kf-toggle"><input type="checkbox" name="baro" checked /> Barometer, 10 Hz, σ 3 m</label>
+      <label class="kf-toggle"><input type="checkbox" name="gps" checked /> GPS, 1 Hz, σ 8 m</label>
+      <label class="kf-toggle"><input type="checkbox" name="outage" /> Lose every sensor from 20 to 35 s</label>
+    </div>
+  </div>
+  <div class="kf-plot" id="fusion-plot" data-plot data-label="Altitude error of each sensor and of the fused estimate"></div>
+  <dl class="kf-stats">
+    <div><dt>Filter error</dt><dd data-stat="error"></dd></div>
+    <div><dt>Widest 2<span class="kf-greek">σ</span></dt><dd data-stat="widest"></dd></div>
+  </dl>
+</figure>
+
+<script>
+  import { mountFusion } from '../scripts/fusion';
+  document.querySelectorAll<HTMLElement>('[data-kf-fusion]').forEach(mountFusion);
+</script>

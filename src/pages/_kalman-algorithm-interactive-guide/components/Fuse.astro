@@ -1,0 +1,31 @@
+---
+import Legend from './Legend.astro';
+import Slider from './Slider.astro';
+---
+
+<figure class="kf-widget" data-kf-fuse>
+  <div class="kf-widget__head">
+    <span class="kf-widget__title">Combining two uncertain altitudes</span>
+    <Legend items={[{ label: 'What you believed', tone: 'truth', shape: 'dashed' }, { label: 'What the sensor says', tone: 'second' }, { label: 'Combined', tone: 'estimate' }]} />
+  </div>
+  <div class="kf-plot" id="fuse-plot" data-plot data-label="Two bell curves and the narrower bell curve you get by combining them"></div>
+  <div class="kf-controls">
+    <Slider id="fuse-prior-mean" name="priorMean" label="Belief" min={970} max={1030} step={0.5} value={992} />
+    <Slider id="fuse-prior-sigma" name="priorSigma" label="Belief σ" min={1} max={20} step={0.5} value={8} />
+    <Slider id="fuse-z-mean" name="zMean" label="Reading" min={970} max={1030} step={0.5} value={1010} />
+    <Slider id="fuse-z-sigma" name="zSigma" label="Reading σ" min={1} max={20} step={0.5} value={5} />
+  </div>
+  <dl class="kf-stats">
+    <div><dt>Kalman gain K</dt><dd data-stat="gain"></dd></div>
+    <div><dt>Combined altitude</dt><dd data-stat="mean"></dd></div>
+    <div><dt>Combined <span class="kf-greek">σ</span></dt><dd data-stat="sigma"></dd></div>
+  </dl>
+  <figcaption class="kf-caption">
+    The combined bell is always narrower than both of its parents, and it always sits closer to the more certain one. Make the two σ equal and it lands exactly halfway.
+  </figcaption>
+</figure>
+
+<script>
+  import { mountFuse } from '../scripts/fuse';
+  document.querySelectorAll<HTMLElement>('[data-kf-fuse]').forEach(mountFuse);
+</script>

@@ -1,0 +1,38 @@
+---
+import Legend from './Legend.astro';
+import Slider from './Slider.astro';
+---
+
+<figure class="kf-widget" data-kf-hidden>
+  <div class="kf-widget__head">
+    <span class="kf-widget__title">Vertical speed, estimated from altitude readings alone</span>
+    <Legend items={[{ label: 'True vertical speed', tone: 'truth' }, { label: 'Estimate', tone: 'estimate' }, { label: '2σ', tone: 'estimate', shape: 'band' }]} />
+  </div>
+  <div class="kf-split">
+    <div class="kf-plot" id="hidden-plot" data-plot data-label="Estimated vertical speed against the true vertical speed"></div>
+    <div class="kf-ellipse">
+      <p class="kf-note">Uncertainty at <span data-time></span></p>
+      <svg data-ellipse role="img" aria-label="Covariance ellipse of altitude against vertical speed"></svg>
+      <ul class="kf-legend">
+        <li><span class="kf-key kf-key--dashed" data-tone="truth" aria-hidden="true"></span>After predict</li>
+        <li><span class="kf-key kf-key--band" data-tone="estimate" aria-hidden="true"></span>After update</li>
+      </ul>
+    </div>
+  </div>
+  <div class="kf-controls">
+    <Slider id="hidden-time" name="time" label="Inspect time" min={0.1} max={90} step={0.1} value={12} />
+    <Slider id="hidden-q" name="q" label="Assumed acceleration" min={0.05} max={3} step={0.05} value={0.5} />
+  </div>
+  <dl class="kf-stats">
+    <div><dt>Vertical speed error</dt><dd data-stat="error"></dd></div>
+    <div><dt>Correlation</dt><dd data-stat="rho"></dd></div>
+  </dl>
+  <figcaption class="kf-caption">
+    The only sensor here is a barometric altimeter sampled ten times a second. The ellipse plots altitude error across and vertical speed error up. It tilts because the two errors are linked. If the filter has the vertical speed too high, its altitude will drift too high as well.
+  </figcaption>
+</figure>
+
+<script>
+  import { mountHidden } from '../scripts/hidden';
+  document.querySelectorAll<HTMLElement>('[data-kf-hidden]').forEach(mountHidden);
+</script>

@@ -1,0 +1,25 @@
+---
+import Legend from './Legend.astro';
+---
+
+<figure class="kf-widget" data-kf-cycle>
+  <div class="kf-widget__head">
+    <span class="kf-widget__title">Predict, then update, one second at a time</span>
+    <Legend items={[{ label: 'True altitude', tone: 'truth' }, { label: 'Before this step', tone: 'truth', shape: 'dashed' }, { label: 'Altimeter reading', tone: 'second' }, { label: 'Belief', tone: 'estimate' }]} />
+  </div>
+  <div class="kf-plot" id="cycle-plot" data-plot data-label="The filter's belief about the altitude as a bell curve, stepping through predict and update"></div>
+  <div class="kf-controls">
+    <div class="kf-group">
+      <button class="kf-button" type="button" data-back>Back</button>
+      <button class="kf-button kf-button--primary" type="button" data-next>Predict</button>
+      <button class="kf-button" type="button" data-reset>Reset</button>
+    </div>
+    <p class="kf-note" data-phase></p>
+  </div>
+  <p class="kf-caption" data-narration aria-live="polite"></p>
+</figure>
+
+<script>
+  import { mountCycle } from '../scripts/cycle';
+  document.querySelectorAll<HTMLElement>('[data-kf-cycle]').forEach(mountCycle);
+</script>

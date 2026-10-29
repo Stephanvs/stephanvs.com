@@ -68,6 +68,7 @@ const works = (await getCollection("work")).slice(0, 2);
                 <Card
                     href={post.href}
                     image={post.image}
+                    darkImage={post.darkImage}
                     meta={formatDate(post.date)}
                     title={post.title}
                     excerpt={post.excerpt}

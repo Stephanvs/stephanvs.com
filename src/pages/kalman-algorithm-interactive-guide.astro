@@ -1,0 +1,720 @@
+---
+import 'katex/dist/katex.min.css';
+import Layout from '../layouts/Layout.astro';
+import Altimeter from './_kalman-algorithm-interactive-guide/components/Altimeter.astro';
+import Average from './_kalman-algorithm-interactive-guide/components/Average.astro';
+import Cycle from './_kalman-algorithm-interactive-guide/components/Cycle.astro';
+import Equation from './_kalman-algorithm-interactive-guide/components/Equation.astro';
+import Flight from './_kalman-algorithm-interactive-guide/components/Flight.astro';
+import Fuse from './_kalman-algorithm-interactive-guide/components/Fuse.astro';
+import Fusion from './_kalman-algorithm-interactive-guide/components/Fusion.astro';
+import Hidden from './_kalman-algorithm-interactive-guide/components/Hidden.astro';
+import Snippet from './_kalman-algorithm-interactive-guide/components/Snippet.astro';
+import Tune from './_kalman-algorithm-interactive-guide/components/Tune.astro';
+import { formatDate, kalmanGuidePost as post } from '../lib/content';
+import aircraftSource from './_kalman-algorithm-interactive-guide/lib/aircraft.ts?raw';
+import filterSource from './_kalman-algorithm-interactive-guide/lib/filter.ts?raw';
+import flightSource from './_kalman-algorithm-interactive-guide/lib/flight.ts?raw';
+import gaussianSource from './_kalman-algorithm-interactive-guide/lib/gaussian.ts?raw';
+import geoSource from './_kalman-algorithm-interactive-guide/lib/geo.ts?raw';
+import matrixSource from './_kalman-algorithm-interactive-guide/lib/matrix.ts?raw';
+import randomSource from './_kalman-algorithm-interactive-guide/lib/random.ts?raw';
+import sensorsSource from './_kalman-algorithm-interactive-guide/lib/sensors.ts?raw';
+import verticalSource from './_kalman-algorithm-interactive-guide/lib/vertical.ts?raw';
+import './_kalman-algorithm-interactive-guide/kalman.css';
+
+const sections = [
+  ['noise', 'Noise'],
+  ['average', 'Averaging'],
+  ['uncertainty', 'Uncertainty'],
+  ['cycle', 'Predict and update'],
+  ['tuning', 'Tuning Q and R'],
+  ['hidden', 'Hidden state'],
+  ['fusion', 'Sensor fusion'],
+  ['general', 'The general form'],
+  ['flight', 'Flying the aircraft'],
+  ['beyond', 'Beyond linear']
+];
+
+const kicker = (id: string) => {
+  const index = sections.findIndex(([key]) => key === id);
+  return `${String(index + 1).padStart(2, '0')} · ${sections[index][1]}`;
+};
+
+const prose =
+  'prose prose-stone max-w-none md:prose-lg prose-headings:font-serif prose-headings:tracking-tight prose-a:decoration-orange-700 prose-a:underline-offset-4 prose-a:hover:text-orange-700';
+
+const mapping = [
+  {
+    name: 'Predict the state',
+    tex: String.raw`\hat{x}_{n+1,n} = F\hat{x}_{n,n} + Gu_n`,
+    code: 'x: G && u ? add(moved, multiply(G, u)) : moved',
+    meaning: 'Move the estimate forward with the motion model and any known input.'
+  },
+  {
+    name: 'Predict the uncertainty',
+    tex: String.raw`P_{n+1,n} = FP_{n,n}F^{T} + Q`,
+    code: 'P: add(multiply(multiply(F, P), transpose(F)), Q)',
+    meaning: 'Carry the uncertainty along with the state, then add what the model cannot explain.'
+  },
+  {
+    name: 'Kalman gain',
+    tex: String.raw`K_n = P_{n,n-1}H^{T}\left(HP_{n,n-1}H^{T} + R_n\right)^{-1}`,
+    code: 'const S = add(multiply(multiply(H, P), transpose(H)), R);\nconst K = multiply(multiply(P, transpose(H)), invert(S));',
+    meaning: "Our uncertainty, divided by our uncertainty plus the sensor's. The matrix version of p / (p + r)."
+  },
+  {
+    name: 'Update the state',
+    tex: String.raw`\hat{x}_{n,n} = \hat{x}_{n,n-1} + K_n\left(z_n - H\hat{x}_{n,n-1}\right)`,
+    code: 'const innovation = subtract(z, multiply(H, x));\nx: add(x, multiply(K, innovation))',
+    meaning: 'Move towards the reading by the gain times the surprise.'
+  },
+  {
+    name: 'Update the uncertainty',
+    tex: String.raw`P_{n,n} = \left(I - K_nH\right)P_{n,n-1}`,
+    code: 'P: multiply(subtract(identity(x.length), multiply(K, H)), P)',
+    meaning: 'Shrink the uncertainty by as much as the reading was trusted.'
+  }
+];
+---
+
+<Layout title={post.title} description={post.excerpt}>
+  <article class="kf py-12 lg:py-20">
+    <header class="max-w-4xl">
+      <p class="font-mono text-xs uppercase tracking-widest text-accent">Interactive guide</p>
+      <h1 class="mt-5 font-serif text-5xl leading-none tracking-tighter sm:text-6xl md:text-7xl">{post.title}</h1>
+      <span class="mt-6 block font-mono text-xs uppercase tracking-wide text-quiet">
+        {formatDate(post.date)} · algorithms, sensor fusion, TypeScript
+      </span>
+      <div class:list={[prose, 'mt-8 max-w-3xl']}>
+        <p>
+          The navigation in aircraft, phones, and cars runs on some version of the Kalman filter. It takes
+          readings from sensors that are noisy, slow, or both, and turns them into one estimate that is better than
+          any single sensor. It is also one of those algorithms that most programmers have heard of and few could
+          write from memory, because most explanations start with five matrix equations and work outwards from there.
+        </p>
+        <p>
+          This guide works the other way round. It starts with one noisy altimeter in one aircraft and adds one idea
+          per chapter, until the same aircraft flies a full circuit in 3D with GPS, a barometer, and gyroscopes. The
+          maths is here, in the notation that <a href="https://kalmanfilter.net/">kalmanfilter.net</a> uses, so you
+          can carry on there afterwards. Every equation is followed by the TypeScript that implements it. Every chart
+          and control on this page runs that same code in your browser, so what you read is what you see working.
+        </p>
+      </div>
+      <nav class="kf-contents" aria-label="Chapters">
+        <p class="kf-label">Contents</p>
+        <ol>
+          {sections.map(([id, label], index) => (
+            <li>
+              <a href={`#${id}`}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                {label}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </header>
+
+    <section id="noise" class="kf-section" aria-labelledby="noise-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('noise')}</p>
+        <h2 id="noise-heading" class="kf-h2">A sensor that never sits still</h2>
+        <p class="kf-lede">
+          An aircraft holds exactly 1,000 metres. Its altimeter does not agree, and it disagrees differently every
+          time you ask.
+        </p>
+      </div>
+      <div class="kf-body">
+        <div class={prose}>
+          <p>
+            Every sensor adds noise. Electronics hum, air pressure flutters, a GPS signal bounces off a building.
+            The reading you get is the true value plus an error you cannot predict. If you plotted enough of those
+            errors in a histogram, most sensors would give you the familiar bell curve, a <em>normal</em> or
+            <em>Gaussian</em> distribution. Small errors are common and large errors are rare.
+          </p>
+          <p>
+            One number describes how wide that bell is, the standard deviation σ. About two readings in three land
+            within one σ of the truth, and about 95% land within two σ. Drag the noise slider and watch the dots
+            spread out.
+          </p>
+        </div>
+        <Altimeter />
+        <div class={prose}>
+          <p>
+            To get noise like this in code, you need two things. The first is a random number generator that you
+            can seed, so every reader of this page sees the same noise and every test gets the same numbers. The
+            second is a way to turn uniform random numbers into bell-shaped ones, which the Box-Muller transform
+            does in two lines.
+          </p>
+        </div>
+        <Snippet source={randomSource} region="random" file="random.ts" />
+        <div class={prose}>
+          <p>
+            Everything that follows is a way to look at a stream of numbers like these and work out where the
+            aircraft really is.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="average" class="kf-section" aria-labelledby="average-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('average')}</p>
+        <h2 id="average-heading" class="kf-h2">Averaging works until the aircraft moves</h2>
+        <p class="kf-lede">
+          The first fix every programmer reaches for is an average. It works well until the aircraft starts to climb.
+        </p>
+      </div>
+      <div class="kf-body">
+        <div class={prose}>
+          <p>
+            A plain average of every reading so far converges on the truth while the aircraft holds altitude. Once
+            it climbs, the old readings drag the answer down. The usual fix is an exponential moving average. It
+            keeps one running value and nudges it towards each new reading by a fixed fraction α.
+          </p>
+        </div>
+        <Equation tex={String.raw`\hat{x}_{n} = \hat{x}_{n-1} + \alpha\left(z_n - \hat{x}_{n-1}\right)`} />
+        <div class={prose}>
+          <p>
+            Read it from right to left. <Equation inline tex={String.raw`z_n - \hat{x}_{n-1}`} /> is how surprised we
+            are by the new reading <Equation inline tex="z_n" />. We move our estimate <Equation inline tex={String.raw`\hat{x}`} />
+            a fraction α of the way towards it. The hat on the x is the convention for "our estimate of", as
+            opposed to the true value.
+          </p>
+        </div>
+        <Snippet source={gaussianSource} region="smooth" file="gaussian.ts" />
+        <Average />
+        <div class={prose}>
+          <p>
+            This shape, <em>old value plus a factor times the surprise</em>, is the heart of the Kalman filter. The
+            problem with the moving average is that you pick α once, by hand, and it never changes. A small α trusts
+            the past and lags behind. A large α trusts each reading and jitters.
+          </p>
+          <p>
+            The right α depends on two things the moving average knows nothing about. One is how noisy the sensor
+            is. The other is how much the aircraft could have moved since the last reading. The Kalman filter
+            tracks both, and computes a fresh α at every step. That α is called the <strong>Kalman gain</strong>.
+            The next three chapters are about how it is computed.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="uncertainty" class="kf-section" aria-labelledby="uncertainty-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('uncertainty')}</p>
+        <h2 id="uncertainty-heading" class="kf-h2">Uncertainty is a number you can carry</h2>
+        <p class="kf-lede">
+          The filter never stores just "the altitude is 1,004 m". It stores "the altitude is 1,004 m, give or take 3".
+        </p>
+      </div>
+      <div class="kf-body">
+        <div class={prose}>
+          <p>
+            That one change is most of the trick. If the estimate carries its own uncertainty, then a new reading
+            is simply a second opinion with its own uncertainty, and you can combine the two opinions properly.
+            Both opinions are bell curves, so each is described by two numbers, a mean and a variance. The variance
+            is σ², the standard deviation squared. Variances are easier to compute with than standard deviations,
+            so the filter works in variances.
+          </p>
+        </div>
+        <Snippet source={gaussianSource} region="gaussian" file="gaussian.ts" />
+        <div class={prose}>
+          <p>
+            Multiply two bell curves together and you get a third bell curve. That product answers the question
+            "where is the aircraft, given both opinions?" Its mean and variance work out to:
+          </p>
+        </div>
+        <Equation tex={String.raw`\mu = \frac{\sigma_2^2\,\mu_1 + \sigma_1^2\,\mu_2}{\sigma_1^2 + \sigma_2^2} \qquad \sigma^2 = \frac{\sigma_1^2\,\sigma_2^2}{\sigma_1^2 + \sigma_2^2}`} />
+        <div class={prose}>
+          <p>
+            Each mean is weighted by the <em>other</em> variance, so the more certain opinion pulls harder. The
+            combined variance is smaller than either input. Two opinions together always know more than either
+            one alone. Try it.
+          </p>
+        </div>
+        <Fuse />
+        <div class={prose}>
+          <p>
+            Now rewrite that formula in the shape of the moving average. Call the variance of our belief
+            <Equation inline tex="p" /> and the variance of the sensor <Equation inline tex="r" />. Then, in the
+            notation of kalmanfilter.net:
+          </p>
+        </div>
+        <Equation tex={String.raw`K_n = \frac{p_{n,n-1}}{p_{n,n-1} + r_n} \qquad \hat{x}_{n,n} = \hat{x}_{n,n-1} + K_n\left(z_n - \hat{x}_{n,n-1}\right) \qquad p_{n,n} = \left(1 - K_n\right)p_{n,n-1}`} />
+        <div class={prose}>
+          <p>
+            The subscripts read as "at step n, given what we knew at step n − 1". So
+            <Equation inline tex={String.raw`\hat{x}_{n,n-1}`} /> is the estimate for step n before its reading
+            arrived, and <Equation inline tex={String.raw`\hat{x}_{n,n}`} /> is the estimate after. The middle
+            equation is the moving average again, with α replaced by <Equation inline tex="K_n" />. The gain is our
+            uncertainty divided by the total uncertainty. If we are unsure and the sensor is precise, K is near 1
+            and we jump to the reading. If we are sure and the sensor is poor, K is near 0 and we barely move.
+          </p>
+        </div>
+        <Snippet source={gaussianSource} region="update" file="gaussian.ts" />
+        <div class={prose}>
+          <p>
+            That function is the complete <strong>update</strong> step of a one-dimensional Kalman filter. It is
+            four lines long.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="cycle" class="kf-section" aria-labelledby="cycle-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('cycle')}</p>
+        <h2 id="cycle-heading" class="kf-h2">Predict, then correct</h2>
+        <p class="kf-lede">
+          Between two readings the aircraft moves. The filter has to move its belief along with it, and admit that
+          it is now less sure.
+        </p>
+      </div>
+      <div class="kf-body">
+        <div class={prose}>
+          <p>
+            Say the autopilot holds a climb of 5 m/s and readings arrive once a second. Before the next reading
+            arrives, the best guess is "5 m higher than last time". That guess is the <strong>motion model</strong>.
+            It is not perfect, because turbulence pushes the aircraft around in ways the autopilot did not ask for.
+            So the prediction also adds some uncertainty, the <strong>process noise</strong>
+            <Equation inline tex="q" />.
+          </p>
+        </div>
+        <Equation tex={String.raw`\hat{x}_{n+1,n} = \hat{x}_{n,n} + v\,\Delta t \qquad p_{n+1,n} = p_{n,n} + q`} />
+        <div class={prose}>
+          <p>
+            Predicting is adding two bell curves, the belief and the motion. Means add and variances add. Every
+            prediction makes the bell wider and every update makes it narrower. Step through it below. Watch the
+            orange bell widen on predict and narrow on update, while the black line marks the truth the filter
+            cannot see.
+          </p>
+        </div>
+        <Snippet source={gaussianSource} region="predict" file="gaussian.ts" />
+        <Cycle />
+        <div class={prose}>
+          <p>
+            Put the two steps in a loop and you have a working Kalman filter. This is the whole algorithm in one
+            dimension.
+          </p>
+        </div>
+        <Snippet source={gaussianSource} region="filter" file="gaussian.ts" />
+        <div class={prose}>
+          <p>
+            After a few steps the variance stops changing. The widening from each predict and the narrowing from
+            each update balance out, and the gain settles at a constant value. For a filter with a fixed q and r,
+            the gain is the ideal α for the moving average, worked out from the noise instead of guessed.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="tuning" class="kf-section" aria-labelledby="tuning-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('tuning')}</p>
+        <h2 id="tuning-heading" class="kf-h2">Tuning with Q and R</h2>
+        <p class="kf-lede">
+          The filter is only as good as what you tell it about the world. You tell it two things, and both are easy
+          to get wrong.
+        </p>
+      </div>
+      <div class="kf-body">
+        <div class={prose}>
+          <p>
+            <Equation inline tex="R" /> is how noisy you believe the sensor is. You can usually look it up in a
+            datasheet or measure it by logging a sensor that is sitting still. <Equation inline tex="Q" /> is how
+            much you believe the world deviates from your motion model between steps. Nobody publishes a
+            datasheet for turbulence, so Q is where most tuning effort goes. In one dimension they are the
+            lowercase q and r from before. In the matrix version they become matrices, hence the capitals.
+          </p>
+          <p>
+            The chart below shows the error of every reading and of the filter over two minutes, and the 2σ band
+            the filter claims for itself. A healthy filter is both accurate and honest. Its error is small, and it
+            stays inside its own band about 95% of the time. Try the presets, then drag the sliders.
+          </p>
+        </div>
+        <Tune />
+        <div class={prose}>
+          <p>
+            The overconfident filter is the dangerous one. It believes its model so much that it ignores readings.
+            Its band settles at ±1.3 m while it is regularly 4 or 5 m off, and nothing downstream can tell that
+            apart from a filter that really is that good. A filter that is too nervous is merely noisy. When in doubt, err on the side of a
+            larger Q.
+          </p>
+          <p>
+            The gain chart shows the other half of the story. It starts high, because the filter knows nothing and
+            trusts the first readings. It then settles to the constant value from the last chapter. Lower Q gives a
+            lower settled gain, which means more smoothing and more lag.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="hidden" class="kf-section" aria-labelledby="hidden-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('hidden')}</p>
+        <h2 id="hidden-heading" class="kf-h2">Estimating what you never measure</h2>
+        <p class="kf-lede">
+          So far the filter was told the climb rate. Take that away, and the filter works out the climb rate on its
+          own from nothing but altitude readings.
+        </p>
+      </div>
+      <div class="kf-body">
+        <div class={prose}>
+          <p>
+            Real aircraft do not hand the filter their exact climb rate. So make vertical speed part of what the
+            filter estimates. The state is now two numbers, altitude <Equation inline tex="h" /> and vertical speed
+            <Equation inline tex={String.raw`\dot{h}`} />. The motion model says the new altitude is the old altitude
+            plus speed times time, and the speed stays the same unless something changes it. Written as a matrix,
+            that model is <Equation inline tex="F" />, the <em>state transition matrix</em>.
+          </p>
+        </div>
+        <Equation tex={String.raw`x = \begin{bmatrix} h \\ \dot{h} \end{bmatrix} \qquad F = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix} \qquad H = \begin{bmatrix} 1 & 0 \end{bmatrix}`} />
+        <div class={prose}>
+          <p>
+            <Equation inline tex="H" /> is the <em>observation matrix</em>. It says what the sensor sees of the
+            state, which here is the altitude and not the speed. The single variance p becomes a 2×2
+            <em>covariance matrix</em> <Equation inline tex="P" />. The diagonal holds the variance of the altitude
+            and the variance of the speed. The two off-diagonal entries hold how the two errors move together, and
+            those are what make the filter work.
+          </p>
+          <p>
+            After a predict, an error in speed has turned into an error in altitude. The filter records that link
+            in P. When the next altitude reading surprises it, the filter knows part of that surprise came from a
+            wrong speed, and it corrects the speed too. That is how a value no sensor reports ends up estimated.
+          </p>
+          <p>
+            TypeScript has no matrices, so we need a few helpers. Arrays of rows keep the code readable, which
+            matters more here than speed.
+          </p>
+        </div>
+        <Snippet source={matrixSource} region="matrix" file="matrix.ts" />
+        <div class={prose}>
+          <p>
+            Now the predict and update steps from the one-dimensional filter, written once for any number of
+            states. Put the two versions side by side and every line has a partner. Addition stays addition.
+            Multiplying by F replaces "add v times Δt". Dividing by p + r becomes multiplying by the inverse of
+            <Equation inline tex="S" />, the uncertainty of the predicted reading.
+          </p>
+        </div>
+        <Snippet source={filterSource} region="types" file="filter.ts" />
+        <Snippet source={filterSource} region="predict" file="filter.ts" />
+        <Snippet source={filterSource} region="update" file="filter.ts" />
+        <Hidden />
+        <div class={prose}>
+          <p>
+            Scrub through the climb at 10 to 15 seconds. Right after the climb starts, the estimated speed lags
+            behind, because the filter needs a few surprising readings before it believes the aircraft really
+            changed what it was doing. Raise the assumed acceleration and it reacts sooner, at the cost of a noisier
+            speed estimate. It is the same trade-off as α, now made for you from the noise numbers.
+          </p>
+        </div>
+        <Snippet source={filterSource} region="constant-velocity" file="filter.ts" />
+        <aside class="kf-aside">
+          <span class="kf-label">Side note · why Q depends on Δt</span>
+          <div class={prose}>
+            <p>
+              The Q above grows with Δt, Δt², and Δt³. That is not decoration. If Q were a fixed number per step, a
+              filter that runs ten times as often would add ten times as much uncertainty per second. It would
+              behave completely differently on a faster computer. Modelling the unknown acceleration as continuous
+              noise and integrating it over Δt gives the same answer whether you predict once a second or fifty
+              times. It is an easy bug to miss, because the filter still runs. It just trusts its model far more
+              than it should.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="fusion" class="kf-section" aria-labelledby="fusion-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('fusion')}</p>
+        <h2 id="fusion-heading" class="kf-h2">Two sensors, two clocks</h2>
+        <p class="kf-lede">
+          Sensor fusion sounds like a separate subject. It is the update step, called once per reading, with each
+          sensor's own H and R.
+        </p>
+      </div>
+      <div class="kf-body">
+        <div class={prose}>
+          <p>
+            Our aircraft now has a barometric altimeter that reports ten times a second with σ 3 m, and a GPS that
+            reports once a second with σ 8 m. They do not take turns politely. So the filter treats time as a stream
+            of events. For each event it predicts forward to the event's timestamp, then updates with whichever
+            sensor produced it. A clock event with no reading only predicts, which lets us draw the filter's
+            belief at a steady rate even when nothing arrives.
+          </p>
+          <p>
+            In code, that becomes a discriminated union of events and a lookup table from sensor to its H and R.
+            Adding a third sensor means adding a row to the table, not another branch.
+          </p>
+        </div>
+        <Snippet source={verticalSource} region="events" file="vertical.ts" />
+        <Snippet source={verticalSource} region="track" file="vertical.ts" />
+        <Fusion />
+        <div class={prose}>
+          <p>
+            Turn the barometer off and the filter leans on GPS alone, so its band widens between each 1 Hz fix. Turn
+            GPS off and little changes, because the barometer is both faster and more precise here. Lose both and the
+            band balloons, because the filter is predicting with no correction. It still knows how fast it was
+            climbing, so it keeps a good guess for a while, and it says honestly how unsure it is becoming. When the
+            readings return, the gain jumps and the band snaps back.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="general" class="kf-section" aria-labelledby="general-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('general')}</p>
+        <h2 id="general-heading" class="kf-h2">The general form, line by line</h2>
+        <p class="kf-lede">
+          These are the five equations that most explanations open with. By now each one should read like a line of
+          code you have already seen.
+        </p>
+      </div>
+      <div class="kf-body">
+        <div class={prose}>
+          <p>
+            The notation follows the <a href="https://kalmanfilter.net/multiSummary.html">summary on kalmanfilter.net</a>.
+            The only new symbol is <Equation inline tex="G" />, the <em>control matrix</em>. It feeds a known input
+            <Equation inline tex="u" /> into the prediction, the way the autopilot's climb rate did in chapter 4.
+            Other texts call it <Equation inline tex="B" />.
+          </p>
+        </div>
+        <ol class="kf-steps">
+          {mapping.map((row) => (
+            <li>
+              <div>
+                <h3>{row.name}</h3>
+                <p>{row.meaning}</p>
+              </div>
+              <div>
+                <Equation tex={row.tex} />
+                <pre><code>{row.code}</code></pre>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <div class={prose}>
+          <p>
+            kalmanfilter.net writes the last equation in a longer form, the <em>Joseph form</em>, which adds a term
+            to stay numerically safe when K is not quite optimal. With 64-bit floats and well-behaved matrices like
+            ours, the short form above works, and it is the one most code uses. If you ever see P lose its symmetry
+            or grow a negative variance, switch to the Joseph form first.
+          </p>
+          <p>
+            The only operation the helpers above did not cover is the inverse of S. For the filters in this guide S
+            is never larger than 2×2, but a small Gauss-Jordan elimination handles any size.
+          </p>
+        </div>
+        <Snippet source={matrixSource} region="invert" file="matrix.ts" />
+      </div>
+    </section>
+
+    <section id="flight" class="kf-section kf-wide" aria-labelledby="flight-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('flight')}</p>
+        <h2 id="flight-heading" class="kf-h2">Flying the whole aircraft</h2>
+        <p class="kf-lede">
+          Three dimensions, three attitude angles, three kinds of sensor, and time as the fourth axis. The finale
+          uses no new algorithm. It runs six of the filters you already know, side by side.
+        </p>
+      </div>
+      <Flight />
+      <div class="kf-body">
+        <div class={prose}>
+          <p>
+            The aircraft takes off heading west, makes a climbing left turn, cruises, then descends through a right
+            turn towards the approach. Three sensors report on it, each at its own rate:
+          </p>
+          <ul>
+            <li>A GPS receiver at 1 Hz. It gives latitude, longitude, and altitude, plus a velocity measured from the Doppler shift of the satellite signals.</li>
+            <li>A barometric altimeter at 10 Hz.</li>
+            <li>Three gyroscopes at 50 Hz, one each for roll, pitch, and yaw. Each has a bias, a small constant error, of up to 0.6°/s.</li>
+          </ul>
+          <p>
+            Press play, switch cameras, and drag the timeline. The orange aircraft is the filter's estimate. The
+            faint black one is the truth that the filter never sees. The orange shell around the estimate is its 2σ
+            position uncertainty at true size, so it is too small to see until GPS goes away.
+          </p>
+        </div>
+
+        <div class={prose}>
+          <h3>One event stream, one reducer</h3>
+          <p>
+            Every reading becomes a <code>SensorEvent</code>, sorted by time. GPS arrives as latitude and longitude,
+            because that is what GPS produces. It is converted to metres east, north, and up from a reference point,
+            and that conversion is the only place in the code that knows about degrees. A flat-earth projection is
+            good to a few metres over the ten kilometres this flight covers, which is about the size of the GPS
+            noise. The simulator uses the same projection, so here it adds no error at all.
+          </p>
+        </div>
+        <Snippet source={sensorsSource} region="sensor-event" file="sensors.ts" />
+        <Snippet source={geoSource} region="to-enu" file="geo.ts" />
+        <div class={prose}>
+          <p>
+            The filter's whole memory is one plain object. Three position filters, one per axis, each tracking a
+            position and a velocity. Three attitude filters, each tracking an angle and the bias of its gyro. Plus
+            the last gyro reading, which one of the measurements below needs.
+          </p>
+        </div>
+        <Snippet source={aircraftSource} region="aircraft-belief" file="aircraft.ts" />
+
+        <div class={prose}>
+          <h3>Position is chapter 6, three times</h3>
+          <p>
+            Each axis runs the constant velocity filter from chapter 6. GPS updates all three axes at once with
+            both position and velocity, so <Equation inline tex="H" /> is the 2×2 identity and the update uses
+            the full matrix form. The barometer updates only the up axis, exactly as in chapter 7. Because the
+            axes are independent, the 3D uncertainty is an ellipsoid aligned with the axes, and the scene can draw
+            it as a sphere stretched by 2σ in each direction.
+          </p>
+          <p>
+            Turn on the GPS outage. It falls on the straight cruise leg, and the shell grows to hundreds of metres
+            while the estimate carries on in a straight line. The real error stays inside the shell, so the filter
+            is uncertain but honest. A constant velocity filter can only ever fly straight, so an outage in a turn
+            would go badly. Real navigation systems fill that gap with accelerometers, which is a topic for a later
+            article.
+          </p>
+        </div>
+
+        <div class={prose}>
+          <h3>Attitude is chapter 6 with a gyro</h3>
+          <p>
+            A gyro measures how fast an angle changes, not the angle itself. Integrating it gives you the angle,
+            plus the bias times the elapsed time, so even a 0.5°/s bias puts you 30° off within a minute. The bias is
+            the hidden state this time. Each attitude filter tracks the angle θ and the bias b. The gyro reading ω
+            is the known input u, which goes through the control matrix G from the general form.
+          </p>
+        </div>
+        <Equation tex={String.raw`\theta_{n+1} = \theta_n + (\omega_n - b_n)\,\Delta t \quad\Longrightarrow\quad F = \begin{bmatrix} 1 & -\Delta t \\ 0 & 1 \end{bmatrix} \quad G = \begin{bmatrix} \Delta t \\ 0 \end{bmatrix} \quad u_n = \omega_n`} />
+        <Snippet source={aircraftSource} region="gyro-model" file="aircraft.ts" />
+        <div class={prose}>
+          <p>
+            To learn the bias, the filter needs something that measures the angles directly, even roughly. The
+            aircraft's motion provides it. Heading is the direction of the GPS velocity. Pitch is the climb angle
+            plus a typical angle of attack. Bank comes from the physics of a coordinated turn, where turn rate,
+            airspeed, and bank angle are tied together:
+          </p>
+        </div>
+        <Equation tex={String.raw`\tan\varphi = \frac{V\,\dot{\psi}}{g} \qquad \gamma = \arctan\frac{v_\text{up}}{v_\text{ground}} \qquad \psi = \operatorname{atan2}\left(v_\text{east},\, v_\text{north}\right)`} />
+        <Snippet source={aircraftSource} region="attitude-from-motion" file="aircraft.ts" />
+        <aside class="kf-aside">
+          <span class="kf-label">Side note · why not use the accelerometer?</span>
+          <div class={prose}>
+            <p>
+              Drone and robot tutorials usually get roll and pitch from an accelerometer, which senses which way is
+              down. That works for something hovering. In a coordinated turn, an aircraft's accelerometer points
+              straight down through the cockpit floor, the same way it does in level flight, because the turn
+              pushes you into your seat rather than sideways. An accelerometer-based filter would report wings
+              level in the middle of a 25° bank. That is why the bank here comes from the turn rate instead.
+            </p>
+          </div>
+        </aside>
+        <div class={prose}>
+          <p>
+            Untick <strong>estimate gyro bias</strong> to see why the hidden bias state matters. The filter now
+            believes its gyros are perfect. Its uncertainty stays tiny, it gives the GPS-derived angles almost no
+            weight, and the attitude drifts tens of degrees away from the truth while the filter remains confident.
+            That is the overconfident filter from chapter 5 again, this time caused by a model that is missing a
+            state rather than by a bad Q.
+          </p>
+          <h3>The step function</h3>
+          <p>
+            Here is everything joined up. Every event moves the position filters forward in time. Then the kind of
+            event decides which update runs. A pure function from the old belief and one event to the new belief
+            means the whole flight is a fold over the event list. The 3D view stores a frame for every 50 ms, and
+            the timeline just picks one. Scrubbing backwards is an array lookup.
+          </p>
+        </div>
+        <Snippet source={aircraftSource} region="step" file="aircraft.ts" />
+        <Snippet source={aircraftSource} region="fly" file="aircraft.ts" />
+        <div class={prose}>
+          <p>
+            The truth comes from a short simulator that flies this plan with a coordinated-turn model, small gusts,
+            and an angle of attack that grows as the aircraft slows down. That last detail is why the pitch estimate
+            is off by up to a degree. The pitch measurement assumes one fixed angle of attack, and the filter cannot
+            do better than the measurement it is given.
+          </p>
+        </div>
+        <Snippet source={flightSource} region="flight-plan" file="flight.ts" />
+        <aside class="kf-aside">
+          <span class="kf-label">Side note · quaternions and the extended Kalman filter</span>
+          <div class={prose}>
+            <p>
+              This aircraft cheats in two places, and both are on purpose. Its gyros report how fast roll, pitch, and
+              heading change. Real strapdown gyros measure rotation about the aircraft's own axes, and turning that
+              into angle rates is a rotation that depends on the current attitude. Roll, pitch, and heading also
+              break down near vertical flight, a problem called gimbal lock. Real attitude filters therefore store
+              orientation as a <strong>quaternion</strong>, four numbers that rotate smoothly in every direction.
+            </p>
+            <p>
+              Both fixes make the model nonlinear, and a nonlinear model cannot be written as a matrix F. The
+              <strong>extended Kalman filter</strong> handles that by linearising the model around the current
+              estimate at every step, using its Jacobian, the matrix of partial derivatives. It then runs the same
+              five equations you have seen here. Quaternions and the extended Kalman filter are the subject of a
+              follow-up article.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="beyond" class="kf-section" aria-labelledby="beyond-heading">
+      <div class="kf-section__intro">
+        <p class="kf-kicker">{kicker('beyond')}</p>
+        <h2 id="beyond-heading" class="kf-h2">Where the linear filter stops</h2>
+        <p class="kf-lede">
+          The filter on this page is optimal when the motion is linear and the noise is Gaussian. Real systems are
+          neither, and a family of variants deals with that.
+        </p>
+      </div>
+      <div class="kf-body">
+        <div class={prose}>
+          <ul>
+            <li>
+              <strong>The extended Kalman filter</strong> linearises a nonlinear model at every step. It is the
+              standard in inertial navigation and the natural next step from this page.
+            </li>
+            <li>
+              <strong>The unscented Kalman filter</strong> skips the derivatives. It pushes a handful of carefully
+              chosen sample points through the nonlinear model and measures where they land. It is often more
+              accurate than the extended filter and easier to get right.
+            </li>
+            <li>
+              <strong>The error-state filter</strong> runs the gyros and accelerometers open-loop at full rate and
+              uses a Kalman filter only to estimate the errors in that integration. Many inertial navigation
+              systems work this way.
+            </li>
+            <li>
+              <strong>Particle filters</strong> drop the bell curve altogether and represent the belief as
+              thousands of weighted guesses. They handle beliefs with two peaks, such as "the aircraft is over one
+              of these two runways", which no Gaussian can represent.
+            </li>
+          </ul>
+          <p>
+            All of them keep the loop you have built here. Predict with a model, compare with a reading, and move
+            towards the reading in proportion to how much you trust it.
+          </p>
+          <h3>Further reading</h3>
+          <ul>
+            <li>
+              <a href="https://kalmanfilter.net/">kalmanfilter.net</a> by Alex Becker works through the same equations
+              with careful numeric examples, and covers the extended and unscented filters.
+            </li>
+            <li>
+              <a href="https://praveshkoirala.com/2023/06/13/a-non-mathematical-introduction-to-kalman-filters-for-programmers/">A non-mathematical introduction to Kalman filters for programmers</a>
+              by Pravesh Koirala builds the intuition in Python, with almost no maths.
+            </li>
+            <li>
+              <a href="https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python">Kalman and Bayesian Filters in Python</a>
+              by Roger Labbe is a free, interactive book that goes from first principles to particle filters.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </article>
+</Layout>

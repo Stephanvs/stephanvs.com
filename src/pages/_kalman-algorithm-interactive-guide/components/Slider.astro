@@ -1,0 +1,20 @@
+---
+interface Props {
+  id: string;
+  name: string;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+}
+
+const { id, name, label, min, max, step, value } = Astro.props;
+const parts = label.split(/([α-ωΑ-Ω])/u).filter(Boolean);
+---
+
+<div class="kf-slider">
+  <label for={id}>{parts.map((part) => (/^[α-ωΑ-Ω]$/u.test(part) ? <span class="kf-greek">{part}</span> : part))}</label>
+  <output for={id}></output>
+  <input id={id} name={name} type="range" min={min} max={max} step={step} value={value} />
+</div>

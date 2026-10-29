@@ -1,0 +1,39 @@
+---
+import Legend from './Legend.astro';
+import Slider from './Slider.astro';
+---
+
+<figure class="kf-widget" data-kf-tune>
+  <div class="kf-widget__head">
+    <span class="kf-widget__title">The full filter, error against the truth</span>
+    <Legend items={[{ label: 'Reading error', tone: 'reading', shape: 'dot' }, { label: 'Filter error', tone: 'estimate' }, { label: "Filter's own 2σ", tone: 'estimate', shape: 'band' }]} />
+  </div>
+  <div class="kf-controls">
+    <div class="kf-segmented" role="group" aria-label="Presets">
+      <button type="button" data-preset="confident">Too confident</button>
+      <button type="button" data-preset="balanced" aria-pressed="true">Balanced</button>
+      <button type="button" data-preset="nervous">Too nervous</button>
+    </div>
+  </div>
+  <div class="kf-plot" id="tune-error" data-plot="error" data-label="Altitude error of readings and of the filter, with the filter's two sigma band"></div>
+  <div class="kf-plot" id="tune-gain" data-plot="gain" data-label="Kalman gain over time">
+    <span class="kf-plot__title">Kalman gain K, how much each reading moves the estimate</span>
+  </div>
+  <div class="kf-controls">
+    <Slider id="tune-q" name="q" label="Assumed turbulence σ" min={0.05} max={6} step={0.05} value={0.8} />
+    <Slider id="tune-r" name="r" label="Assumed sensor σ" min={1} max={40} step={0.5} value={8} />
+  </div>
+  <dl class="kf-stats">
+    <div><dt>Raw reading error</dt><dd data-stat="raw"></dd></div>
+    <div><dt>Filter error</dt><dd data-stat="filtered"></dd></div>
+    <div><dt>Truth inside the 2<span class="kf-greek">σ</span> band</dt><dd data-stat="inside"></dd></div>
+  </dl>
+  <figcaption class="kf-caption">
+    The real turbulence is 0.8 m per half second and the real sensor noise is 8 m. A well-tuned filter keeps its orange line inside its own band at least 95% of the time. An overconfident filter draws a thin band and then leaves it.
+  </figcaption>
+</figure>
+
+<script>
+  import { mountTune } from '../scripts/tune';
+  document.querySelectorAll<HTMLElement>('[data-kf-tune]').forEach(mountTune);
+</script>

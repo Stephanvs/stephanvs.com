@@ -1,0 +1,19 @@
+---
+type Tone = 'truth' | 'reading' | 'estimate' | 'second';
+type Shape = 'line' | 'dot' | 'band' | 'dashed';
+
+interface Props {
+  items: { label: string; tone: Tone; shape?: Shape }[];
+}
+
+const { items } = Astro.props;
+---
+
+<ul class="kf-legend">
+  {items.map(({ label, tone, shape = 'line' }) => (
+    <li>
+      <span class:list={['kf-key', { 'kf-key--dot': shape === 'dot', 'kf-key--band': shape === 'band', 'kf-key--dashed': shape === 'dashed' }]} data-tone={tone} aria-hidden="true"></span>
+      {label}
+    </li>
+  ))}
+</ul>

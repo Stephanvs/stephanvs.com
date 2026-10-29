@@ -1,0 +1,70 @@
+---
+import Legend from './Legend.astro';
+import Slider from './Slider.astro';
+
+const instruments = [
+  ['clock', 'Time'],
+  ['gps', 'Last GPS fix'],
+  ['altitude', 'Altitude'],
+  ['roll', 'Bank'],
+  ['pitch', 'Pitch'],
+  ['yaw', 'Heading'],
+  ['error', 'Position error'],
+  ['bias', 'Gyro bias, roll · pitch · yaw']
+];
+---
+
+<figure class="kf-widget kf-flight" data-kf-flight>
+  <div class="kf-widget__head">
+    <span class="kf-widget__title">A four-and-a-half minute flight, filtered</span>
+    <Legend items={[{ label: 'True path and aircraft', tone: 'truth' }, { label: 'GPS fix', tone: 'reading', shape: 'dot' }, { label: 'Filter estimate', tone: 'estimate' }, { label: '2σ position', tone: 'estimate', shape: 'band' }]} />
+  </div>
+  <div class="kf-split">
+    <div class="kf-flight__stage" data-stage>
+      <p class="kf-flight__status" data-status>The 3D view loads when you get here</p>
+      <span class="kf-flight__badge" data-badge hidden></span>
+      <span class="kf-flight__scale">Aircraft drawn 4× actual size · drag to orbit outside chase view</span>
+    </div>
+    <dl class="kf-instruments">
+      {instruments.map(([key, label]) => (
+        <div class="kf-instrument">
+          <dt>{label}</dt>
+          <dd><span class="kf-instrument__est" data-est={key}>–</span><span class="kf-instrument__truth" data-truth={key}></span></dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+  <div class="kf-transport">
+    <button class="kf-button kf-button--primary" type="button" data-play>Play</button>
+    <input type="range" min="0" max="1" step="1" value="0" aria-label="Time" data-scrub />
+    <output data-clock>0:00</output>
+    <div class="kf-segmented" role="group" aria-label="Playback speed">
+      <button type="button" data-speed="1">1×</button>
+      <button type="button" data-speed="4" aria-pressed="true">4×</button>
+      <button type="button" data-speed="16">16×</button>
+    </div>
+  </div>
+  <div class="kf-controls">
+    <div class="kf-segmented" role="group" aria-label="Camera">
+      <button type="button" data-camera="chase" aria-pressed="true">Chase</button>
+      <button type="button" data-camera="overview">Overview</button>
+      <button type="button" data-camera="top">Top</button>
+      <button type="button" data-camera="side">Side</button>
+    </div>
+    <label class="kf-toggle"><input type="checkbox" name="outage" /> GPS outage, 2:08 to 2:40</label>
+    <label class="kf-toggle"><input type="checkbox" name="estimateBias" checked /> Estimate gyro bias</label>
+    <Slider id="flight-noise" name="noise" label="Sensor noise" min={0.5} max={3} step={0.25} value={1} />
+    <button class="kf-button" type="button" data-reseed>New noise</button>
+  </div>
+  <div class="kf-plot" id="flight-error" data-plot="error" data-label="Horizontal position error and the filter's two sigma over the flight">
+    <span class="kf-plot__title">Horizontal position error against the filter's own 2<span class="kf-greek">σ</span>. Click to jump.</span>
+  </div>
+  <div class="kf-plot" id="flight-bank" data-plot="bank" data-label="Estimated and true bank angle over the flight">
+    <span class="kf-plot__title">Bank angle, estimate against truth. Click to jump.</span>
+  </div>
+</figure>
+
+<script>
+  import { mountFlight } from '../scripts/flight';
+  document.querySelectorAll<HTMLElement>('[data-kf-flight]').forEach(mountFlight);
+</script>

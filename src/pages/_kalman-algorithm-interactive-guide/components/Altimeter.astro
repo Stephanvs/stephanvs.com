@@ -1,0 +1,28 @@
+---
+import Legend from './Legend.astro';
+import Slider from './Slider.astro';
+---
+
+<figure class="kf-widget" data-kf-altimeter>
+  <div class="kf-widget__head">
+    <span class="kf-widget__title">Altimeter, aircraft holding 1,000 metres</span>
+    <Legend items={[{ label: 'True altitude', tone: 'truth' }, { label: 'Altimeter reading', tone: 'reading', shape: 'dot' }]} />
+  </div>
+  <div class="kf-split">
+    <div class="kf-plot" id="altimeter-plot" data-plot data-label="Altimeter readings scattered around the true altitude of 1,000 metres"></div>
+    <div class="kf-readout">
+      <span class="kf-label">Altimeter says</span>
+      <span class="kf-readout__value" data-reading>1,000.0<small>m</small></span>
+      <span class="kf-note" data-truth>Truth 1,000.0 m</span>
+    </div>
+  </div>
+  <div class="kf-controls">
+    <Slider id="altimeter-noise" name="noise" label="Sensor noise σ" min={1} max={20} step={0.5} value={6} />
+    <button class="kf-button" type="button" data-pause>Pause</button>
+  </div>
+</figure>
+
+<script>
+  import { mountAltimeter } from '../scripts/altimeter';
+  document.querySelectorAll<HTMLElement>('[data-kf-altimeter]').forEach(mountAltimeter);
+</script>

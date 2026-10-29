@@ -1,0 +1,21 @@
+---
+import { Code } from 'astro:components';
+
+interface Props {
+  source: string;
+  region: string;
+  file: string;
+}
+
+const { source, region, file } = Astro.props;
+const lines = source.split(/\r?\n/);
+const start = lines.findIndex((line) => line.trim() === `// #region ${region}`);
+const end = lines.findIndex((line, index) => index > start && line.trim() === '// #endregion');
+if (start < 0 || end < 0) throw new Error(`Snippet region "${region}" not found in ${file}`);
+const code = lines.slice(start + 1, end).join('\n');
+---
+
+<figure class="kf-snippet">
+  <figcaption><span>{file}</span><span>TypeScript</span></figcaption>
+  <Code code={code} lang="ts" themes={{ light: 'vitesse-light', dark: 'vitesse-dark' }} defaultColor="light" />
+</figure>
