@@ -1,0 +1,150 @@
+---
+import '../../styles/interactive.css';
+---
+
+<figure class="lx not-prose" data-retry>
+  <p class="lx-eyebrow">Interactive · Retry amplification</p>
+  <figcaption class="lx-title">One click, how many database calls?</figcaption>
+  <p class="lx-lede">Each square is one call arriving at that service, on average, for a single user click. The database at the bottom is the one that's failing.</p>
+
+  <div class="lx-seg retry-strategy" role="group" aria-label="Retry strategy">
+    <button type="button" class="lx-chip" value="every-hop" aria-pressed="true" data-strategy>Retry at every hop</button>
+    <button type="button" class="lx-chip" value="one-hop" aria-pressed="false" data-strategy>One hop, with a retry budget</button>
+  </div>
+
+  <form class="lx-controls" data-form>
+    <label class="lx-field">
+      <span class="lx-field-head">
+        <span class="lx-label">Retrying hops</span>
+        <output data-value="hops">3</output>
+      </span>
+      <input type="range" name="hops" min="1" max="4" step="1" value="3" />
+    </label>
+    <label class="lx-field">
+      <span class="lx-field-head">
+        <span class="lx-label">Attempts per hop</span>
+        <output data-value="attempts">4</output>
+      </span>
+      <input type="range" name="attempts" min="1" max="5" step="1" value="4" />
+    </label>
+    <label class="lx-field">
+      <span class="lx-field-head">
+        <span class="lx-label">Database failure rate</span>
+        <output data-value="failure">100%</output>
+      </span>
+      <input type="range" name="failure" min="0" max="100" step="5" value="100" />
+    </label>
+    <label class="lx-field">
+      <span class="lx-label">User clicks per second</span>
+      <input type="number" name="rps" min="1" step="1" value="100" inputmode="numeric" />
+    </label>
+  </form>
+
+  <ol class="retry-tree" data-tree aria-label="Calls per service for one click"></ol>
+
+  <div class="lx-stats" data-columns="3" aria-live="polite">
+    <div class="lx-stat">
+      <span class="lx-stat-label">Database calls per click</span>
+      <span class="lx-stat-value" data-out="per-click">64</span>
+      <span class="lx-stat-note">on average</span>
+    </div>
+    <div class="lx-stat">
+      <span class="lx-stat-label">Database load</span>
+      <span class="lx-stat-value" data-out="load">6,400/s</span>
+      <span class="lx-stat-note" data-out="load-note">at 100 clicks/s</span>
+    </div>
+    <div class="lx-stat">
+      <span class="lx-stat-label">Worst case per click</span>
+      <span class="lx-stat-value" data-out="worst">64</span>
+      <span class="lx-stat-note">when every attempt fails</span>
+    </div>
+  </div>
+
+  <p class="lx-note" data-out="explain"></p>
+</figure>
+
+<style>
+  .retry-strategy {
+    margin-top: 1.25rem;
+  }
+
+  .retry-tree {
+    display: grid;
+    gap: 0.25rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .retry-tree :global(.retry-level) {
+    display: grid;
+    gap: 0.5rem;
+    border-top: 1px solid var(--lx-grid);
+    padding: 0.625rem 0;
+  }
+
+  @media (min-width: 40rem) {
+    .retry-tree :global(.retry-level) {
+      grid-template-columns: 9rem minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+  }
+
+  .retry-tree :global(.retry-name) {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .retry-tree :global(.retry-service) {
+    font-weight: 600;
+  }
+
+  .retry-tree :global(.retry-count) {
+    font-family: var(--lx-mono);
+    font-size: 0.75rem;
+    color: var(--lx-ink-2);
+  }
+
+  .retry-tree :global(.retry-dots) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding-top: 0.2rem;
+  }
+
+  .retry-tree :global(.retry-dot) {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--lx-series-1);
+  }
+
+  .retry-tree :global(.retry-dots[data-dense] .retry-dot) {
+    width: 6px;
+    height: 6px;
+    border-radius: 1px;
+  }
+
+  .retry-tree :global(.retry-dot[data-new]) {
+    animation: retry-pop 240ms ease-out backwards;
+    animation-delay: calc(min(var(--i), 400) * 1ms);
+  }
+
+  .retry-tree :global(.retry-level[data-failing] .retry-service::after) {
+    content: ' (failing)';
+    font-weight: 400;
+    color: var(--lx-ink-2);
+  }
+
+  @keyframes retry-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+  }
+</style>
+
+<script>
+  import '../../scripts/limits/retry-amplification';
+</script>
