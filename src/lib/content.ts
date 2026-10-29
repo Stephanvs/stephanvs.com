@@ -1,7 +1,9 @@
 import type { ImageMetadata } from 'astro';
 import { getCollection } from 'astro:content';
 import periodicTablePreview from '../assets/periodic-table-of-software-architecture.png';
+import periodicTableDarkPreview from '../assets/periodic-table-of-software-architecture-dark.png';
 import languageSpectrumPreview from '../assets/grand-programming-languages-spectrum.png';
+import languageSpectrumDarkPreview from '../assets/grand-programming-languages-spectrum-dark.png';
 import kalmanGuidePreview from '../assets/kalman-algorithm-interactive-guide.png';
 import kalmanGuideDarkPreview from '../assets/kalman-algorithm-interactive-guide-dark.png';
 
@@ -19,7 +21,8 @@ export const periodicTablePost: PostSummary = {
   title: 'The Periodic Table of Software Architecture',
   excerpt: 'Ninety-two architectural patterns, principles, and practices arranged as a periodic table you can explore.',
   date: new Date('2026-10-12'),
-  image: periodicTablePreview
+  image: periodicTablePreview,
+  darkImage: periodicTableDarkPreview
 };
 
 export const languageSpectrumPost: PostSummary = {
@@ -27,7 +30,8 @@ export const languageSpectrumPost: PostSummary = {
   title: 'The Grand Programming Languages Spectrum',
   excerpt: 'Twenty-seven languages scored on eleven facets and cross-checked against seven popularity rankings, with charts you can explore.',
   date: new Date('2026-10-12'),
-  image: languageSpectrumPreview
+  image: languageSpectrumPreview,
+  darkImage: languageSpectrumDarkPreview
 };
 
 export const kalmanGuidePost: PostSummary = {
