@@ -1,9 +1,61 @@
 ---
 title: Popcorn for TeamCity
-excerpt: Support and connection help for the independent TeamCity client for iPhone and iPad.
+excerpt: Check, start and cancel TeamCity builds from your iPhone and iPad. Free 14-day trial, then a one-time unlock.
 ---
 
-Popcorn lets you check builds on TeamCity Cloud and self-hosted TeamCity servers over HTTPS, read logs, investigate failures, and start or cancel builds from iPhone or iPad. It is a one-time app purchase with no subscription or in-app purchases.
+import { Image } from 'astro:assets';
+import buildStatus from './01-build-status.webp';
+import failureDetails from './03-failure-details.webp';
+import buildLog from './04-build-log.webp';
+
+Know your build broke before you're back at your desk. Popcorn is an iPhone and iPad app for TeamCity. See whether a build passed, read its log while it runs, find the tests that failed, and re-run or cancel it from your phone.
+
+<p>
+  <a href="https://apps.apple.com/app/apple-store/id6819589996?pt=PROVIDER&ct=site&mt=8">Download on the App Store</a>.
+  Free to try for 14 days, then one purchase. No subscription.
+</p>
+
+<div class="not-prose my-10 grid grid-cols-3 gap-3 sm:gap-6">
+  <Image src={buildStatus} alt="A build configuration in Popcorn with a chart of the last 20 builds and a list of recent builds" widths={[300, 600]} sizes="(min-width: 768px) 240px, 30vw" class="rounded-2xl" />
+  <Image src={failureDetails} alt="Failed tests for a build, with new failures listed first" widths={[300, 600]} sizes="(min-width: 768px) 240px, 30vw" class="rounded-2xl" />
+  <Image src={buildLog} alt="A live build log with highlighted errors" widths={[300, 600]} sizes="(min-width: 768px) 240px, 30vw" class="rounded-2xl" />
+</div>
+
+## What you can do
+
+- **See every build.** Browse projects and configurations, and see recent builds across branches with status and progress. A chart of the last 20 builds splits run time from queue time, so slow queues stand out.
+- **Read live logs.** Follow output as it arrives, search it, and switch line wrapping.
+- **Find out why it failed.** Build problems and failed tests, new failures first, with error messages and stack traces when your server has them.
+- **Start, re-run or cancel.** Trigger a build on any branch, run it with custom parameters or a specific agent, re-run the same revision, or cancel a queued or running build.
+- **Watch your agents.** Agents grouped by pool, with busy, idle and offline filters.
+- **Follow your investigations.** The investigations assigned to you, grouped by project.
+- **Glance at the Home Screen.** A widget shows one configuration's latest build.
+
+## Try it without a server
+
+Tap **Try with sample data** on the first screen. Popcorn opens with fictional projects, builds and logs so you can look around before you connect anything.
+
+## Your server, your token
+
+Popcorn works with TeamCity Cloud and with self-hosted TeamCity over HTTPS. You sign in with a personal access token, which Popcorn keeps in the iOS Keychain. Requests go straight from your device to your server. There is no Popcorn account, no Popcorn server, and no analytics or advertising code in the app.
+
+## Pricing
+
+Popcorn is free to download and every feature is free for 14 days. After that, Popcorn Pro is a one-time purchase that unlocks the app for good on your devices signed in with the same Apple Account. There is no subscription. If you bought Popcorn before it became free, it stays fully unlocked.
+
+## Questions
+
+### Does it work with self-hosted TeamCity?
+
+Yes, as long as the server uses HTTPS with a valid certificate. For a server on a private network, connect your phone to the same Wi-Fi or VPN first.
+
+### What permissions does the token need?
+
+Read access is enough to view builds, logs and agents. Starting and cancelling builds needs the matching TeamCity permissions. Read [how to create a read-only TeamCity token](/blog/teamcity-read-only-token/) for a safe first setup.
+
+### Can I try it with my whole team?
+
+Yes. Everyone gets their own 14-day trial. For a longer team trial, email [support@stephanvs.com](mailto:support@stephanvs.com).
 
 ## Support
 
@@ -29,6 +81,16 @@ Starting and cancelling builds requires the corresponding TeamCity permissions. 
 ### How do I remove a connection?
 
 Open Settings and remove the saved server. This deletes its profile and Keychain token from this device. Remove each server before uninstalling if you want to clear its credentials: Keychain items can persist after uninstalling. You can also revoke the token in TeamCity.
+
+## Press kit
+
+Popcorn is an independent iPhone and iPad client for TeamCity, made by Stephan van Stekelenburg.
+
+**Short description.** Popcorn brings TeamCity to iPhone and iPad. Check build status and history, follow live logs, see failed tests, and trigger, re-run or cancel builds. It connects directly to TeamCity Cloud or self-hosted servers with a personal access token. Free 14-day trial, then a one-time purchase.
+
+**Facts.** Requires iOS 17 or later. Works with TeamCity Cloud and self-hosted TeamCity over HTTPS. No account, no tracking. Available worldwide in English.
+
+Screenshots are on the [App Store page](https://apps.apple.com/app/apple-store/id6819589996?pt=PROVIDER&ct=press&mt=8). For anything else, email [support@stephanvs.com](mailto:support@stephanvs.com).
 
 ## Privacy and terms
 

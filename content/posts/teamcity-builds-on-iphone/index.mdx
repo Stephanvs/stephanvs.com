@@ -1,0 +1,39 @@
+---
+title: Checking TeamCity builds from your iPhone
+date: 2026-11-18
+excerpt: Three ways to keep an eye on TeamCity when you're away from your desk, and when each one fits.
+description: Compare TeamCity's web UI in mobile Safari, build notifications, and a native app for checking and controlling TeamCity builds from an iPhone.
+tags: ["teamcity", "ci", "ios"]
+image: ./cover.webp
+---
+
+A long build starts, you leave your desk, and twenty minutes later you want to know whether it passed. TeamCity runs on your server, not your phone, so you need some way to reach it. Here are three, with what each does well.
+
+## 1. The web UI in Safari
+
+TeamCity's web interface works in mobile Safari. Sign in, bookmark the build configuration you care about, and add it to your Home Screen.
+
+It costs nothing and shows everything. But the interface is designed for a large screen. Expect to zoom and scroll, and a long build log is hard to read on a phone. It's fine for an occasional look.
+
+## 2. Notifications
+
+TeamCity can tell you when something happens instead of making you check. In your profile, open the notification rules and choose what to hear about, such as a build failing in a project you watch, or a build that you started finishing. TeamCity can send these by email, and your server may have other notifiers set up, such as Slack.
+
+Notifications are the best way to learn that something broke. They're less useful for what comes next. To see which tests failed, read the log, or re-run the build, you're back to the web UI.
+
+## 3. A native app
+
+I built [Popcorn](/popcorn/) for the part after the notification. It's an iPhone and iPad app that connects to TeamCity Cloud or a self-hosted server over HTTPS with a personal access token. From the phone you can:
+
+- see recent builds for a configuration, and a chart of the last 20 builds with run and queue time
+- follow a build log as it runs, and search it
+- see failed tests, new failures first, with their stack traces
+- trigger a build on a branch, run it with options, re-run the same revision, or cancel it
+- check which agents are busy, and see investigations assigned to you
+- put a widget for one configuration on your Home Screen
+
+The token stays in the iOS Keychain, and the app talks straight to your server. There's no account and no tracking. It's free for 14 days, then a one-time purchase. If you'd like a safe first setup, start with [a read-only token](/blog/teamcity-read-only-token/).
+
+## Which one to use
+
+Use notifications to find out that something happened. Then use whichever of the other two you'll actually open. If you check builds from your phone once a month, the web UI is enough. If you do it every day, a native app saves the zooming.

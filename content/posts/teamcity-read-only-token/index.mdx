@@ -1,0 +1,48 @@
+---
+title: A read-only TeamCity access token for your phone
+date: 2026-11-25
+excerpt: Create a TeamCity personal access token that can look at one project's builds and do nothing else.
+description: How to create a TeamCity personal access token limited to one project with the Read-only preset, and what it can and can't do.
+tags: ["teamcity", "ci", "security"]
+image: ./cover.webp
+---
+
+A personal access token lets a script or an app talk to TeamCity's REST API as you. By default a new token can do everything you can do. For a phone app, a dashboard, or a script that only reads build status, that's more than it needs. TeamCity lets you limit a token to one project and a chosen set of permissions.
+
+## Create the token
+
+1. Sign in to TeamCity, click your avatar in the header, and choose **Profile**.
+2. Open **Access Tokens** and create a new token.
+3. Give it a name you'll recognise later, such as `phone-read-only`.
+4. Set a time limit. TeamCity revokes the token automatically when it expires, so a lost phone or a forgotten script stops working on its own.
+5. Under **Permissions scope**, choose **Limit per project** instead of **Same as current user**.
+6. Pick the project, then choose the **Read-only** preset.
+7. Create the token and copy its value now. TeamCity shows it only once.
+
+The projects and permissions you can choose depend on your own permissions. You can't give a token more access than your account has. Token-based authentication is on by default, but if you don't see **Access Tokens**, ask your TeamCity administrator whether it's enabled on your server.
+
+## What a read-only token can do
+
+The Read-only preset is meant for looking at the project's builds without changing anything. TeamCity's documentation doesn't list exactly which permissions the preset contains, so run the check below once to confirm what your token can do.
+
+TeamCity's documentation warns that some operations need more than one permission. For example, TeamCity's Project Viewer role has read-only access to projects but can't view agent details, so a read-only token may show an empty agents list. If something you expect is missing, that's usually why.
+
+## Check that it works
+
+Call the REST API with the token in the `Authorization` header:
+
+```bash
+curl --header "Authorization: Bearer <token>" https://<your-server>/app/rest/builds
+```
+
+You should get a list of recent builds from the project you picked. Builds from other projects shouldn't appear.
+
+## When you need more
+
+To start and cancel builds from your phone, create a second token for that project with **Full access**, or with only the permissions you need. Keep the read-only token for anything that only looks.
+
+Revoke a token from the same **Access Tokens** page when you no longer use it.
+
+## Use it with Popcorn
+
+[Popcorn](/popcorn/) is my iPhone and iPad app for TeamCity. A read-only token is a good way to try it: you'll see build status, history and logs without giving the app the power to start anything. The token stays in the iOS Keychain and goes only to your server.
