@@ -1,0 +1,149 @@
+---
+title: Monorepo or polyrepo when agents write the commits
+date: 2026-11-12
+excerpt: At 100 to 1000 times today's commit volume, CI breaks before the repository layout does. The layout question becomes which conflict domains your build graph can compute.
+description: A first-principles look at monorepo versus polyrepo when coding agents multiply commit volume by 100 to 1000, with the merge-window math, the case for and against each layout, and what CI needs at that scale.
+tags: ["ci", "architecture", "agents"]
+image: ./cover.webp
+---
+
+Coding agents make a commit cheap to write. If every engineer runs a few agents that land changes all day, commit volume grows by 100x or 1000x. The usual monorepo-versus-polyrepo debate is about code sharing, ownership, and tooling. At that volume a different question decides it. Can CI verify and merge that many changes and keep the main branch green?
+
+This post argues both sides from first principles. The numbers come from a small model that you can rerun with the script below. Where I give a judgment instead of a measurement, I say so.
+
+## The question bundles four choices
+
+"Monorepo or polyrepo" sounds like a choice about directories. It actually fixes four separate things:
+
+1. **Conflict domain.** Which changes have to be serialized against each other.
+2. **Verification scope.** Which tests a change has to pass.
+3. **Consistency model.** Whether consumers build against the producer's latest commit or against a pinned version.
+4. **Write authority.** Who can change what, including the tests and CI configuration that judge the change.
+
+A polyrepo fixes all four when someone creates the repositories, and it replaces cross-repo dependencies with version pins. A monorepo with a hermetic build graph computes the first two for each change from the graph, and it keeps every dependency at the latest commit. A monorepo without a hermetic build gets one global conflict domain and can only guess its test scope. So the useful question is which of the four you can compute, and which you have to fix by hand.
+
+## Merge throughput hits its limit first
+
+Every change in flight in one conflict domain during one verification window depends on all the others passing. λ is the number of changes merged per second in that domain, T is the verification time, and p is the chance that a change fails. The chance that the whole window stays green is
+
+P(green) = (1 − p)<sup>λT</sup>
+
+The failure rate p counts real breakage and flaky failures alike. When the window goes red, the merge queue has to find the failure, eject it, and verify the rest again. Batching and pipelining don't change the exponent. Uber's [SubmitQueue](https://doi.org/10.1145/3302424.3303970) speculates on the outcomes of pending changes and builds likely outcomes in parallel, so it pays for throughput with extra build capacity.
+
+For a baseline, take 100 engineers who each merge 4 changes a day, spread over 24 hours because agents don't sleep. At 100x that is 40,000 changes a day. That is the volume Google reported for its monorepo in January 2015: [16,000 changes on a typical workday from engineers and 24,000 from automated systems](https://doi.org/10.1145/2854146). At 1000x it is 400,000 changes a day, or 4.6 a second.
+
+| Scale | T | p | Conflict domains | Changes in window | P(window green) |
+|---|---|---|---|---|---|
+| 100x | 10 min | 1% | 1 | 278 | 0.06 |
+| 100x | 10 min | 1% | 100 | 2.8 | 0.97 |
+| 1000x | 10 min | 0.1% | 1 | 2,778 | 0.06 |
+| 1000x | 10 min | 1% | 100 | 28 | 0.76 |
+| 1000x | 1 min | 0.1% | 100 | 2.8 | 0.997 |
+| 1000x | 10 min | 0.01% | 1 | 2,778 | 0.76 |
+
+For small p, (1 − p)<sup>n</sup> is close to e<sup>−pn</sup>, so only the product of p, λ, and T counts. Cutting the failure rate, the verification time, or the load per conflict domain by 10x buys the same result. At 1000x you need two of those cuts.
+
+Flaky tests count toward p directly. With 5,000 tests that each flake once in 10,000 runs, 39% of full runs fail with no real defect. In 2016 Google reported that [about 1.5% of its test runs were flaky, and almost 16% of its tests showed some flakiness](https://testing.googleblog.com/2016/05/flaky-tests-at-google-and-how-we.html). At this scale the flake rate is a throughput limit, not a hygiene problem.
+
+This script prints every combination of scale, window, failure rate, and domain count, plus the flake figure:
+
+```bash
+awk 'BEGIN {
+	perDay = 400
+	split("100 1000", scales, " "); split("60 600", windows, " ")
+	split("0.01 0.001 0.0001", rates, " "); split("1 100", domains, " ")
+	print "scale\tT(s)\tp\tdomains\tchanges\tP(green)"
+	for (s = 1; s <= 2; s++) for (w = 1; w <= 2; w++)
+	for (r = 1; r <= 3; r++) for (d = 1; d <= 2; d++) {
+		n = perDay * scales[s] / 86400 * windows[w] / domains[d]
+		printf "%dx\t%d\t%g\t%d\t%.1f\t%.3f\n", scales[s], windows[w], rates[r], domains[d], n, (1 - rates[r]) ^ n
+	}
+	tests = 5000; flake = 0.0001
+	printf "%d tests that flake at %g: P(false red) = %.3f\n", tests, flake, 1 - (1 - flake) ^ tests
+}'
+```
+
+Choosing between a monorepo and a polyrepo is choosing how to split λ. A polyrepo splits it once, by repository. A monorepo can split it per change, by which changes affect disjoint parts of the build graph, but only if the graph is sound.
+
+## The case for a monorepo
+
+- **Cross-cutting changes stay atomic.** Agents make these nearly free to write. A codemod across 400 call sites is one change, verified against one snapshot. In a polyrepo the same change becomes an expand-and-contract migration across many repositories over at least two releases, and the old API lives until the last consumer upgrades.
+- **The agent sees every caller.** It can check each caller before it changes an API. In a polyrepo, a broken consumer shows up only when that consumer bumps its pin. That happens later, in another agent session that knows nothing about the cause. When writing code costs almost nothing, the delay between causing a break and detecting it drives the cost.
+- **Test scope is exact.** The reverse dependencies of the changed files are exactly the tests to run. A polyrepo needs a separate dependency-graph service to answer that question, which means rebuilding the monorepo's build graph outside of Git.
+- **Each dependency has one version.** There are no diamond dependencies, no version-skew matrix in production, and no version-bump commits that add load.
+
+## Where a monorepo breaks
+
+- **Everyone merges into one branch.** Without a sound build graph, every change shares one conflict domain, and the one-domain rows of the table apply.
+- **Widely used code merges the domains back into one.** A change to a core library, the root lockfile, build rules, or CI configuration affects nearly every target. If agents touch these files often, the conflict domains collapse into one.
+- **A broken main branch spreads fast.** At 4.6 changes a second, a break in a core target reaches every in-flight agent at its next rebase. Agents blame their own change and push fixes for code they didn't break, and each fix adds load.
+- **Workspaces get expensive.** Thousands of concurrent sandboxes cannot each clone a large repository. You need copy-on-write snapshots, a virtual file system such as Meta's EdenFS, or the partial clone and sparse checkout that Git's `scalar` command sets up.
+- **Hermetic builds stop being optional.** You need builds as strict as Bazel or Buck2 make them. Tests that touch shared databases, the network, or the wall clock break the proof that two changes are independent, and they make the cache unsound. At 400,000 changes a day, an unsound cache produces false greens at a steady rate.
+
+## The case for polyrepos
+
+- **The split holds without tooling.** A repository boundary needs no hermetic build and no build-graph tool, and each repository uses its language's normal toolchain. That matters for .NET. MSBuild's project cache, which [MSBuildCache](https://github.com/microsoft/MSBuildCache) uses for remote caching, is still marked experimental.
+- **Failures stay contained.** A producer's commit cannot turn a consumer red until the consumer bumps its pin.
+- **Permissions follow repository boundaries.** Git hosts scope access per repository. GitHub's [fine-grained tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) can be limited to selected repositories. Per-path limits exist only as add-on rules, such as CODEOWNERS or [push rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets), and GitHub offers push rulesets only for private and internal repositories. In a monorepo, an agent hit by prompt injection that can write to `.github/workflows` can change the CI checks for every project.
+- **Bases stay stable.** Each repository sees only its own share of the commit traffic, so long agent sessions rebase less often.
+
+## Where polyrepos break
+
+- **Integration is postponed, not avoided.** Every producer release opens version-bump pull requests in every consumer. If producers release on every merge, bump volume grows with releases times consumers, and bumps become the most common kind of commit.
+- **People draw the boundaries once.** Agents make cross-cutting changes far more often than people did. Every change that crosses a boundary pays for a multi-release migration.
+- **Version skew grows.** The number of deployed version combinations grows combinatorially, and nothing tests the combination that actually runs in production.
+- **Shared repositories get busy.** The repository that holds the shared libraries has the same λ problem as a monorepo, and it cannot see its consumers.
+
+## Side by side
+
+| Property | Monorepo, hermetic | Monorepo, not hermetic | Polyrepo |
+|---|---|---|---|
+| Conflict domain | Computed per change | Global | Fixed per repository |
+| Test scope | Exact reverse dependencies | Path guesses or everything | Local only, consumers unseen |
+| Consistency | Latest commit, one version | Latest commit, one version | Pinned, skew |
+| Cross-cutting change | One change | One change | Many pull requests over several releases |
+| Blast radius | What the change affects | Everyone | One repository until the bump |
+| Break detected | In the same change | In the same change, with noise | At the consumer's bump |
+| Write scope | Needs path rules | Needs path rules | Per repository |
+| Extra commit load | None | None | Version bumps |
+| Up-front cost | Build system migration | Low | Low, grows with the graph |
+
+## What CI needs at 100x to 1000x
+
+These apply to either layout. Most of them change one term of P(green).
+
+1. **A hermetic, content-addressed build graph with remote caching and remote execution.** Parallel execution cuts T, and caching cuts cost. At 1000x the cache hit rate is what keeps spend flat, because consecutive changes share almost all of their build steps.
+2. **An exact affected set for each change.** It cuts T. Meta's [predictive test selection](https://arxiv.org/abs/1810.05286) selects fewer than a third of the tests that build dependencies would select and still reports over 99.9% of faulty changes. Selection like that is unsound, so it needs a full run after merge as a backstop.
+3. **Conflict domains split by disjoint affected sets.** It cuts λ per domain. When two changes affect disjoint targets, the build graph proves that one cannot change the other's result. They verify in parallel, and the second lands on top of the first without another run. The only serialized step is the compare-and-swap on the main branch ref, which takes milliseconds.
+4. **A separate lane for widely used code.** Leaf targets merge fast and in parallel. Core libraries, lockfiles, central package versions, build rules, and CI configuration go through a batched lane with owner review. That is polyrepo behavior, applied only where the build graph shows that a change affects everything.
+5. **Merges against the last known green snapshot.** Pre-merge checks verify against the last known green (LKG) snapshot. After merge, a full run finds the culprit by bisection and reverts it automatically. Agents start work from LKG, never from the tip of main, so a broken main branch blocks no one. Reverts are keyed by change ID, so a revert job that crashes or runs twice ends in the same state. Google's TAP [runs post-submit tests in milestones that span many changes](https://research.google.com/pubs/archive/45861.pdf) and then searches for the culprit. Chromium publishes a [last known good revision](https://chromium.googlesource.com/chromium/src/+/56.0.2886.1/docs/android_build_instructions.md) that you can sync to instead of the tip.
+6. **An inner loop that is not CI.** An agent makes 10 to 50 attempts per change. Those attempts should query the same cache through an API that builds and tests named targets at a named snapshot. Only the final change enters the merge queue. The alternative, a CI run on every push, is expensive. Assume 20 attempts per change and 90 seconds of runner setup per run. At 1000x that is 8 million runs and 200,000 runner-hours a day spent on setup alone.
+7. **Automatic flake quarantine.** It cuts p. If the same inputs produce both a pass and a fail, the test is flaky by definition. Quarantine it without waiting for a person to triage it.
+8. **Structured failure output.** For each failing target, return whether it also fails on the base snapshot, a command that reproduces the failure, and the first assertion diff, instead of a log. With a cache, the base-snapshot result is nearly free, and it stops agents from blaming themselves for breaks that were already there.
+9. **No hot files.** A file that most changes edit acts as a global lock in any layout. Common examples are a central dependency-injection registration, a route table, the project list in a `.sln` file or a workspace `Cargo.toml`, and `CHANGELOG.md`. Let each module register itself and discover the modules by convention. Use a glob such as `members = ["crates/*"]` in Cargo. Generate solution files on demand with [SlnGen](https://github.com/microsoft/slngen). Write changelog entries as one fragment file per change.
+10. **Changes cannot weaken their own checks.** A change that edits code cannot also delete tests, edit CI configuration, or lower thresholds without passing a separate gate. Enforce that as a rule on file paths, because nobody can read 400,000 changes a day.
+11. **Human review leaves the per-change path.** Review that takes hours is a serial step with T measured in hours. People review the shared-code lane, the policies, and a sample of changes. Without this change, 1000x does not happen.
+
+## Pick the layout by whether your build graph is sound
+
+- **If you can make the build hermetic, use a monorepo.** Conflict domains are computed per change, integration stays at the latest commit, and the cross-cutting changes that agents make cheaply stay atomic. Add a separate lane for widely used code.
+- **If you can't yet, use polyrepos.** A repository boundary is the only split that holds without a hermetic build. Cut boundaries where the census below shows little coupling, not along team lines. Expect version bumps to become your largest source of commits, and run them through the same queue.
+- **A monorepo without a hermetic build fails first.** It has one global conflict domain, guessed test scope, and an unsound cache.
+
+For a .NET-heavy codebase today, I would pick a few repositories, cut where measured coupling is low, each with its own merge queue. I would stay there until the MSBuild build is hermetic enough to trust its cache. Rust fits a hermetic monorepo more easily. Both of those are judgments, not measurements.
+
+## Measure your own repository first
+
+Two Git commands show where your commits actually go. The first lists the files that the most commits touched in the last 90 days:
+
+```bash
+git log --since=90.days --name-only --pretty=format: | grep . | sort | uniq -c | sort -rn | head -25
+```
+
+The second counts the commits that span more than one top-level directory:
+
+```bash
+git log --since=90.days --name-only --pretty=format:'@' | awk '/^@/{if(n)t++;if(n>1)x++;delete d;n=0;next} NF{i=index($0,"/");k=i?substr($0,1,i-1):".";if(!(k in d)){d[k];n++}} END{if(n)t++;if(n>1)x++;printf "%d/%d commits span >1 top-level dir\n",x,t}'
+```
+
+A short list from the first command names the files that cap throughput in any layout. The second gives the share of commits that would pay for a cross-repo migration if you split at the top-level directories. On my dotfiles repository over the past year, 25 of 631 commits crossed a top-level directory, and two Scoop configuration files changed in 121 and 113 of those commits.
