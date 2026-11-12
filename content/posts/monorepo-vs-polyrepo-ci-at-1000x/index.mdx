@@ -146,4 +146,4 @@ The second counts the commits that span more than one top-level directory:
 git log --since=90.days --name-only --pretty=format:'@' | awk '/^@/{if(n)t++;if(n>1)x++;delete d;n=0;next} NF{i=index($0,"/");k=i?substr($0,1,i-1):".";if(!(k in d)){d[k];n++}} END{if(n)t++;if(n>1)x++;printf "%d/%d commits span >1 top-level dir\n",x,t}'
 ```
 
-A short list from the first command names the files that cap throughput in any layout. The second gives the share of commits that would pay for a cross-repo migration if you split at the top-level directories. On my dotfiles repository over the past year, 25 of 631 commits crossed a top-level directory, and two Scoop configuration files changed in 121 and 113 of those commits.
+A short list from the first command names the files that cap throughput in any layout. The second gives the share of commits that would pay for a cross-repo migration if you split at the top-level directories.
