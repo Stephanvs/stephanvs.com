@@ -1,0 +1,247 @@
+---
+import { Code } from 'astro:components';
+import { frameworkDefaults, scanCommand, statusLabels, type LimitStatus } from '../../data/unbounded-defaults';
+import '../../styles/interactive.css';
+
+const filters: { value: 'all' | LimitStatus; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'open', label: statusLabels.open },
+  { value: 'loose', label: statusLabels.loose },
+  { value: 'bounded', label: statusLabels.bounded }
+];
+
+// Let long member names wrap after a dot instead of mid-word.
+const breakAfterDots = (text: string) => text.split(/(?<=\.)(?=[A-Za-z])/);
+
+const count = (value: 'all' | LimitStatus) =>
+  value === 'all' ? frameworkDefaults.length : frameworkDefaults.filter((item) => item.status === value).length;
+---
+
+<figure class="lx not-prose" data-audit>
+  <p class="lx-eyebrow">Interactive · Framework defaults</p>
+  <figcaption class="lx-title">Which .NET defaults leave the limit to you?</figcaption>
+  <p class="lx-lede">Open a row to see what goes wrong under load and how to bound it.</p>
+
+  <div class="lx-seg audit-filters" role="group" aria-label="Filter by limit">
+    {filters.map((filter) => (
+      <button type="button" class="lx-chip" value={filter.value} aria-pressed={filter.value === 'all' ? 'true' : 'false'} data-filter>
+        {filter.label} <span class="audit-count">{count(filter.value)}</span>
+      </button>
+    ))}
+  </div>
+
+  <div class="audit-head" aria-hidden="true">
+    <span class="lx-label">API</span>
+    <span class="lx-label">Default</span>
+    <span class="lx-label">Limit</span>
+  </div>
+
+  <ul class="audit-list">
+    {frameworkDefaults.map((item) => (
+      <li class="audit-item" data-status={item.status}>
+        <button type="button" class="audit-row" aria-expanded="true" aria-controls={`audit-${item.id}`} data-toggle>
+          <code class="audit-api">{breakAfterDots(item.api).map((part, index) => (index > 0 ? [<wbr />, part] : part))}</code>
+          <span class="audit-value">{breakAfterDots(item.value).map((part, index) => (index > 0 ? [<wbr />, part] : part))}</span>
+          <span class="audit-status" data-status={item.status}>{statusLabels[item.status]}</span>
+          <span class="audit-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="audit-detail" id={`audit-${item.id}`}>
+          <dl>
+            <div>
+              <dt class="lx-label">Under load</dt>
+              <dd>{item.risk}</dd>
+            </div>
+            <div>
+              <dt class="lx-label">{item.status === 'bounded' ? 'Advice' : 'Fix'}</dt>
+              <dd>{item.fix}</dd>
+            </div>
+          </dl>
+          {item.code && <div class="audit-code"><Code code={item.code} lang="csharp" /></div>}
+        </div>
+      </li>
+    ))}
+  </ul>
+
+  <div class="audit-scan">
+    <p class="lx-label">Scan your own code for candidates</p>
+    <div class="lx-code">
+      <pre id="audit-scan-command">{scanCommand}</pre>
+      <button type="button" class="lx-button lx-copy" data-copy="audit-scan-command">Copy</button>
+    </div>
+    <p class="lx-note">This finds places to look, not bugs. A bounded queue built elsewhere won't show up, and a WhenAll over three tasks is fine.</p>
+  </div>
+</figure>
+
+<style>
+  .audit-filters {
+    margin-top: 1.25rem;
+  }
+
+  .audit-count {
+    color: inherit;
+    opacity: 0.6;
+  }
+
+  .audit-head,
+  .audit-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.25rem 1rem;
+    align-items: center;
+  }
+
+  .audit-head {
+    display: none;
+    margin-top: 1.25rem;
+    border-bottom: 1px solid var(--lx-ink);
+    padding: 0 2rem 0.5rem 0;
+  }
+
+  .audit-list {
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .audit-item {
+    border-bottom: 1px solid var(--lx-line);
+  }
+
+  .audit-item[hidden] {
+    display: none;
+  }
+
+  .audit-row {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    padding: 0.75rem 0;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .audit-row:hover .audit-api {
+    color: var(--lx-accent);
+  }
+
+  .audit-api {
+    grid-column: 1 / -1;
+    font-family: var(--lx-mono);
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+  }
+
+  .audit-value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 0.85rem;
+    color: var(--lx-ink-2);
+  }
+
+  .audit-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .audit-status::before {
+    content: '';
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+  }
+
+  .audit-status[data-status='open']::before {
+    background: var(--lx-critical);
+  }
+
+  .audit-status[data-status='loose']::before {
+    background: var(--lx-warning);
+    transform: rotate(45deg) scale(0.85);
+  }
+
+  .audit-status[data-status='bounded']::before {
+    background: var(--lx-good);
+    border-radius: 50%;
+  }
+
+  .audit-chevron {
+    display: none;
+  }
+
+  .audit-detail {
+    padding: 0 0 1rem;
+  }
+
+  .audit-detail[hidden] {
+    display: none;
+  }
+
+  .audit-detail dl {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+  }
+
+  .audit-detail dd {
+    margin: 0.2rem 0 0;
+    max-width: 40rem;
+  }
+
+  .audit-code {
+    margin-top: 0.875rem;
+  }
+
+  .audit-code :global(pre) {
+    overflow-x: auto;
+    padding: 1rem 1.125rem;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  .audit-scan {
+    margin-top: 1.5rem;
+  }
+
+  @media (min-width: 48rem) {
+    .audit-head,
+    .audit-row {
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 9.5rem 1rem;
+    }
+
+    .audit-head {
+      display: grid;
+      padding-right: 0;
+    }
+
+    .audit-api {
+      grid-column: auto;
+    }
+
+    .audit-chevron {
+      display: block;
+      width: 0.5rem;
+      height: 0.5rem;
+      border-right: 1.5px solid var(--lx-ink-2);
+      border-bottom: 1.5px solid var(--lx-ink-2);
+      transform: rotate(45deg) translateY(-25%);
+      transition: transform 150ms;
+    }
+
+    .audit-row[aria-expanded='true'] .audit-chevron {
+      transform: rotate(-135deg) translateY(-25%);
+    }
+
+    .audit-detail dl {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.5rem;
+    }
+  }
+</style>
+
+<script>
+  import '../../scripts/limits/unbounded-audit';
+</script>
