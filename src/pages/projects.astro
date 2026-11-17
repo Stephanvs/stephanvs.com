@@ -1,15 +1,119 @@
 ---
-import ProjectList from '../components/ProjectList.astro';
-import { projects } from '../data/projects';
+import ProjectGlyph from '../components/ProjectGlyph.astro';
+import { destination, projectLabel, projects } from '../data/projects';
 import Layout from '../layouts/Layout.astro';
 
 const description = 'Apps, command-line tools, and libraries I build outside client work.';
+const pad = (value: number) => String(value).padStart(2, '0');
+
+const [lead, ...rest] = projects.map((project, index) => ({ ...project, order: index + 1 }));
+
+const tally = new Map<string, number>();
+for (const { stack } of projects) if (stack) tally.set(stack, (tally.get(stack) ?? 0) + 1);
+const stacks = [...tally].sort(([, a], [, b]) => b - a);
+
+const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent';
+const kicker = 'font-mono text-xs uppercase tracking-widest';
+const button = 'inline-flex justify-center gap-2 border px-4 py-3 font-mono text-xs uppercase tracking-wide no-underline transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink';
+const textLink = 'font-mono text-xs uppercase tracking-wide underline decoration-accent underline-offset-4 transition-colors hover:text-accent';
+// The glyph sits behind the text and is cut off by its section's right and bottom edges.
+const backdrop = 'pointer-events-none absolute inset-0 -z-10 overflow-hidden';
 ---
 
 <Layout title="Projects" description={description}>
-  <section class="py-16 md:py-20">
-    <h1 class="mb-6 font-serif text-6xl leading-none tracking-tighter md:text-8xl">Projects</h1>
-    <p class="mb-10 max-w-3xl text-lg leading-relaxed text-muted">{description}</p>
-    <ProjectList projects={projects} headingLevel={2} />
-  </section>
+  <header class="rise grid gap-10 border-b border-line py-16 md:py-20 lg:grid-cols-4 lg:items-end lg:gap-16">
+    <div class="lg:col-span-3">
+      <p class:list={[kicker, 'text-accent']}>Built on the side / {pad(projects.length)}</p>
+      <h1 class="mt-5 font-serif text-6xl leading-none tracking-tighter md:text-8xl">Projects</h1>
+      <p class="mt-6 max-w-3xl text-lg leading-relaxed text-muted">{description}</p>
+    </div>
+    <div class="border-t border-line pt-4 lg:col-start-4">
+      <p id="stacks-label" class:list={[kicker, 'text-faint']}>Written in</p>
+      <dl class="mt-3 font-mono text-xs uppercase tracking-wide" aria-labelledby="stacks-label">
+        {stacks.map(([stack, count]) => (
+          <div class="flex items-baseline gap-3 py-1.5">
+            <dt class="flex flex-1 items-baseline gap-3 after:flex-1 after:border-b after:border-dotted after:border-line-soft">{stack}</dt>
+            <dd class="text-accent">{pad(count)}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </header>
+
+  {lead && (
+    <article class="rise group relative isolate border-b border-line pt-14 pb-32 md:pb-14 lg:py-20" style={`--order:${lead.order}`}>
+      <div class={backdrop}>
+        <ProjectGlyph name={lead.glyph} class="absolute -right-8 -bottom-12 w-52 md:-right-10 md:-bottom-14 md:w-[42%] lg:w-[38%]" />
+      </div>
+      <p class:list={[kicker, 'flex gap-3']}>
+        <span class="text-accent">{pad(lead.order)}</span>
+        <span class="text-faint">{projectLabel(lead)}</span>
+      </p>
+      <h2 class="mt-5 font-serif text-5xl leading-none tracking-tighter text-balance sm:text-6xl xl:text-7xl">
+        <a href={lead.links[0].href} {...destination(lead.links[0].href).attrs} class:list={['no-underline transition-colors hover:text-accent', focusRing]}>{lead.name}</a>
+      </h2>
+      <p class="mt-6 max-w-md text-lg lg:max-w-xl leading-relaxed text-pretty text-muted">{lead.summary}</p>
+      <ul class="mt-8 flex flex-col gap-3 sm:flex-row">
+        {lead.links.map(({ label, href }, index) => {
+          const { arrow, attrs } = destination(href);
+          return (
+            <li class="flex flex-col">
+              <a href={href} {...attrs} class:list={[button, focusRing, index === 0 ? 'border-fill bg-fill text-fill-ink' : 'border-line']}>
+                {label} <span aria-hidden="true">{arrow}</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </article>
+  )}
+
+  <ul class="grid grid-cols-1 md:grid-cols-2">
+    {rest.map((project) => (
+      <li
+        class="rise group relative isolate border-b border-line-soft pt-12 pb-20 before:absolute before:inset-x-0 before:-top-px before:h-0.5 before:origin-left before:scale-x-0 before:bg-accent before:transition-transform before:duration-500 hover:before:scale-x-100 focus-within:before:scale-x-100 motion-reduce:before:transition-none md:odd:border-r md:odd:pr-10 md:even:pl-10 md:last:odd:col-span-2 md:last:odd:border-r-0 md:last:odd:pr-0 lg:py-14"
+        style={`--order:${project.order}`}
+      >
+        <div class={backdrop}>
+          <ProjectGlyph name={project.glyph} class="absolute -right-6 -bottom-10 w-40 lg:w-1/2 lg:max-w-72" />
+        </div>
+        <p class:list={[kicker, 'flex gap-3']}>
+          <span class="text-accent">{pad(project.order)}</span>
+          <span class="text-faint">{projectLabel(project)}</span>
+        </p>
+        <h2 class="mt-4 font-serif text-4xl leading-none tracking-tight lg:text-5xl">
+          <a href={project.links[0].href} {...destination(project.links[0].href).attrs} class:list={['no-underline transition-colors after:absolute after:inset-0 group-hover:text-accent', focusRing]}>{project.name}</a>
+        </h2>
+        <p class="mt-4 max-w-sm leading-relaxed text-pretty text-quiet">{project.summary}</p>
+        <ul class="mt-8 flex flex-wrap gap-x-6 gap-y-3">
+          {project.links.map(({ label, href }) => {
+            const { arrow, attrs } = destination(href);
+            return (
+              <li>
+                <a href={href} {...attrs} class:list={['relative z-10', textLink, focusRing]}>
+                  {label} <span aria-hidden="true">{arrow}</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </li>
+    ))}
+  </ul>
 </Layout>
+
+<style>
+  @media (prefers-reduced-motion: no-preference) {
+    .rise {
+      animation: rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: calc(var(--order, 0) * 80ms);
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(0.75rem);
+      }
+    }
+  }
+</style>
