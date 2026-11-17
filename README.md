@@ -48,3 +48,4 @@ See the [Cloudflare build image documentation](https://developers.cloudflare.com
 - `content/work/`: Work pages
 - `content/pages/`: Static pages
 - `src/data/projects.ts`: Projects listed on the home page and `/projects`
+- `src/data/project-glyphs.ts`: The outline drawing shown behind each project on `/projects`

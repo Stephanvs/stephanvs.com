@@ -1,5 +1,5 @@
 ---
-import type { Href, Project } from '../data/projects';
+import { destination, projectLabel, type Project } from '../data/projects';
 
 interface Props {
   projects: readonly Project[];
@@ -9,18 +9,14 @@ interface Props {
 const { projects, headingLevel } = Astro.props;
 const Heading = `h${headingLevel}` as const;
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent';
-
-function destination(href: Href) {
-  return href.startsWith('/')
-    ? { arrow: '→', attrs: {} }
-    : { arrow: '↗', attrs: { target: '_blank', rel: 'noopener noreferrer' } };
-}
 ---
 
 <ul class="border-t border-line">
-  {projects.map(({ name, kind, stack, summary, links }) => (
+  {projects.map((project) => {
+    const { name, summary, links } = project;
+    return (
     <li class="grid grid-cols-1 gap-y-3 border-b border-line-soft py-8 md:grid-cols-4 md:items-baseline md:gap-x-8">
-      <p class="font-mono text-xs uppercase tracking-wide text-faint">{kind} / {stack}</p>
+      <p class="font-mono text-xs uppercase tracking-wide text-faint">{projectLabel(project)}</p>
       <div class="md:col-span-2">
         <Heading class="font-serif text-2xl leading-tight tracking-tight lg:text-3xl">
           <a href={links[0].href} {...destination(links[0].href).attrs} class:list={['no-underline transition-colors hover:text-accent', focusRing]}>{name}</a>
@@ -40,5 +36,6 @@ function destination(href: Href) {
         })}
       </ul>
     </li>
-  ))}
+    );
+  })}
 </ul>
