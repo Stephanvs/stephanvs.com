@@ -12,6 +12,11 @@ const {
 } = Astro.props;
 const path = Astro.url.pathname;
 const pageTitle = `${title} | Stephan van Stekelenburg`;
+const navItems = [
+	{ href: '/', label: 'Home', active: path === '/' },
+	{ href: '/blog', label: 'Blog', active: path.startsWith('/blog') },
+	{ href: '/work', label: 'Work', active: path.startsWith('/work') }
+];
 ---
 
 <!doctype html>
@@ -50,30 +55,16 @@ const pageTitle = `${title} | Stephan van Stekelenburg`;
 			</a>
 			<nav class="w-full overflow-x-auto sm:w-auto" aria-label="Main navigation">
 				<ul class="flex list-none gap-6 pb-1 sm:pb-0">
-					<li>
-						<a
-							href="/"
-							class:list={[
-								'font-mono text-xs uppercase tracking-widest no-underline transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
-								{ 'text-accent': path === '/' }
-							]}>Home</a>
-					</li>
-					<li>
-						<a
-							href="/blog"
-							class:list={[
-								'font-mono text-xs uppercase tracking-widest no-underline transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
-								{ 'text-accent': path.startsWith('/blog') }
-							]}>Blog</a>
-					</li>
-					<li>
-						<a
-							href="/work"
-							class:list={[
-								'font-mono text-xs uppercase tracking-widest no-underline transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
-								{ 'text-accent': path.startsWith('/work') }
-							]}>Work</a>
-					</li>
+					{navItems.map(({ href, label, active }) => (
+						<li>
+							<a
+								href={href}
+								class:list={[
+									'font-mono text-xs uppercase tracking-widest no-underline transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
+									{ 'text-accent': active }
+								]}>{label}</a>
+						</li>
+					))}
 				</ul>
 			</nav>
 		</header>
