@@ -54,5 +54,12 @@ export const projects: readonly Project[] = [
       { label: 'GitHub', href: 'https://github.com/Stephanvs/archevolt' },
       { label: 'NuGet', href: 'https://www.nuget.org/packages/Archevolt' }
     ]
+  },
+  {
+    name: 'Difftastic',
+    kind: 'Web app',
+    stack: 'TypeScript',
+    summary: 'A read-only pull request viewer. Paste a GitHub or Bitbucket Cloud PR link and review the diff without the ceremony.',
+    links: [{ label: 'Website', href: 'https://difftastic.dev' }]
   }
 ];
