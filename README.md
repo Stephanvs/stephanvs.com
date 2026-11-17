@@ -47,3 +47,4 @@ See the [Cloudflare build image documentation](https://developers.cloudflare.com
 - `content/posts/`: Blog posts
 - `content/work/`: Work pages
 - `content/pages/`: Static pages
+- `src/data/projects.ts`: Projects listed on the home page and `/projects`

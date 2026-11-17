@@ -2,7 +2,9 @@
 import { Image } from "astro:assets";
 import { getCollection, render } from "astro:content";
 import Card from "../components/Card.astro";
+import ProjectList from "../components/ProjectList.astro";
 import SectionHead from "../components/SectionHead.astro";
+import { projects } from "../data/projects";
 import Layout from "../layouts/Layout.astro";
 import { contentSlug, formatDate, getPostSummaries } from "../lib/content";
 import avatar from "../../content/pages/home/stephanvs.png";
@@ -98,13 +100,10 @@ const works = (await getCollection("work")).slice(0, 2);
     </div>
 
     <SectionHead
-        kicker="Apps / 04"
-        title="Popcorn for TeamCity"
-        href="/popcorn/"
-        linkText="Support and connection help"
+        kicker="Projects / 04"
+        title="Built on the side"
+        href="/projects"
+        linkText="All projects"
     />
-    <div class="max-w-3xl border-t border-line pt-6 text-lg leading-relaxed text-muted">
-        <p>Check builds on TeamCity Cloud or a self-hosted TeamCity server over HTTPS, read logs, and start or cancel builds from iPhone or iPad. Plain HTTP is not supported.</p>
-        <p class="mt-4">For help, email <a class="underline decoration-accent underline-offset-4 hover:text-accent" href="mailto:support@stephanvs.com">support@stephanvs.com</a>.</p>
-    </div>
+    <ProjectList projects={projects.slice(0, 4)} headingLevel={3} />
 </Layout>

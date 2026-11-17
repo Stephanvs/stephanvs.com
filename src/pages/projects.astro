@@ -1,0 +1,15 @@
+---
+import ProjectList from '../components/ProjectList.astro';
+import { projects } from '../data/projects';
+import Layout from '../layouts/Layout.astro';
+
+const description = 'Apps, command-line tools, and libraries I build outside client work.';
+---
+
+<Layout title="Projects" description={description}>
+  <section class="py-16 md:py-20">
+    <h1 class="mb-6 font-serif text-6xl leading-none tracking-tighter md:text-8xl">Projects</h1>
+    <p class="mb-10 max-w-3xl text-lg leading-relaxed text-muted">{description}</p>
+    <ProjectList projects={projects} headingLevel={2} />
+  </section>
+</Layout>
