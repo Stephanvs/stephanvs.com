@@ -1,0 +1,66 @@
+---
+import '../../styles/interactive.css';
+---
+
+<figure class="lx not-prose" data-depth-calculator>
+  <p class="lx-eyebrow">Interactive · Limit calculator</p>
+  <figcaption class="lx-title">Calculate a queue limit instead of guessing it</figcaption>
+  <p class="lx-lede">Enter what you know about the consumer and the traffic. The limit, the memory it costs, and the C# follow from it.</p>
+
+  <form class="lx-controls" data-form>
+    <label class="lx-field">
+      <span class="lx-label">Consumer drain rate (items/s)</span>
+      <input type="number" name="drainRate" min="1" step="1" value="400" inputmode="numeric" />
+    </label>
+    <label class="lx-field">
+      <span class="lx-label">Wait budget (seconds)</span>
+      <input type="number" name="waitBudget" min="0.01" step="0.1" value="2" inputmode="decimal" />
+    </label>
+    <label class="lx-field">
+      <span class="lx-label">Item size (KB)</span>
+      <input type="number" name="itemSize" min="0.01" step="0.5" value="2" inputmode="decimal" />
+    </label>
+    <label class="lx-field">
+      <span class="lx-label">Arrival rate during a spike (items/s)</span>
+      <input type="number" name="arrivalRate" min="0" step="1" value="600" inputmode="numeric" />
+    </label>
+    <label class="lx-field">
+      <span class="lx-label">When the queue is full</span>
+      <select name="fullMode">
+        <option value="Wait">Wait (backpressure)</option>
+        <option value="DropOldest" selected>DropOldest</option>
+        <option value="DropNewest">DropNewest</option>
+        <option value="DropWrite">DropWrite</option>
+      </select>
+    </label>
+  </form>
+
+  <div class="lx-stats" data-columns="3" aria-live="polite">
+    <div class="lx-stat">
+      <span class="lx-stat-label">Queue depth max</span>
+      <span class="lx-stat-value" data-out="depth">800</span>
+      <span class="lx-stat-note">items</span>
+    </div>
+    <div class="lx-stat">
+      <span class="lx-stat-label">Memory ceiling</span>
+      <span class="lx-stat-value" data-out="memory">1.6 MB</span>
+      <span class="lx-stat-note">payloads only</span>
+    </div>
+    <div class="lx-stat">
+      <span class="lx-stat-label">Time until full</span>
+      <span class="lx-stat-value" data-out="fill">4 s</span>
+      <span class="lx-stat-note" data-out="fill-note">at 600 items/s</span>
+    </div>
+  </div>
+
+  <p class="lx-note" data-out="advice"></p>
+
+  <div class="lx-code">
+    <pre id="depth-calculator-snippet" data-out="snippet"></pre>
+    <button type="button" class="lx-button lx-copy" data-copy="depth-calculator-snippet">Copy</button>
+  </div>
+</figure>
+
+<script>
+  import '../../scripts/limits/queue-depth-calculator';
+</script>
