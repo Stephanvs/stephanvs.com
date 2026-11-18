@@ -76,6 +76,17 @@ export const projects: readonly Project[] = [
     ]
   },
   {
+    name: 'd2lang-cs',
+    kind: '.NET library',
+    stack: 'C#',
+    summary: 'Build D2 diagrams from typed C# objects. It writes the .d2 source, and you render it with the D2 CLI.',
+    glyph: 'd2lang',
+    links: [
+      { label: 'GitHub', href: 'https://github.com/Stephanvs/d2lang-cs' },
+      { label: 'NuGet', href: 'https://www.nuget.org/packages/d2lang-cs' }
+    ]
+  },
+  {
     name: 'Popcorn for TeamCity',
     kind: 'iOS app',
     stack: 'Swift',
