@@ -7,6 +7,8 @@ tags: ["ci", "architecture", "agents"]
 image: ./cover.webp
 ---
 
+import RepoLayoutQuadrants from '../../../src/components/RepoLayoutQuadrants.astro';
+
 Coding agents make a commit cheap to write. If every engineer runs a few agents that land changes all day, commit volume grows by 100x or 1000x. The usual monorepo-versus-polyrepo debate is about code sharing, ownership, and tooling. At that volume a different question decides it. Can CI verify and merge that many changes and keep the main branch green?
 
 This post argues both sides from first principles. The numbers come from a small model that you can rerun with the script below. Where I give a judgment instead of a measurement, I say so.
@@ -21,6 +23,12 @@ This post argues both sides from first principles. The numbers come from a small
 4. **Write authority.** Who can change what, including the tests and CI configuration that judge the change.
 
 A polyrepo fixes all four when someone creates the repositories, and it replaces cross-repo dependencies with version pins. A monorepo with a hermetic build graph computes the first two for each change from the graph, and it keeps every dependency at the latest commit. A monorepo without a hermetic build gets one global conflict domain and can only guess its test scope. So the useful question is which of the four you can compute, and which you have to fix by hand.
+
+The first two choices move together, because both come from the same build graph: if you can compute one, you can compute the other. That leaves two axes. One runs from conflict domains and test scope fixed by hand to computed per change. The other runs from pinned versions to the latest commit. Each layout sits in one quadrant.
+
+<RepoLayoutQuadrants />
+
+The top-left quadrant is where a monorepo starts before its build is hermetic, and it is the worst place to be at high commit volume. Moving right costs a build system migration. Moving down costs version bumps and skew. The bottom-right quadrant is a polyrepo that rebuilds the build graph outside of Git to find its consumers. It gets exact test scope across repositories, but its conflict domains stay fixed per repository and breaks still surface at the bump. Write authority sits on neither axis: a polyrepo gets it from repository boundaries, and a monorepo has to add path rules in any quadrant.
 
 ## Merge throughput hits its limit first
 

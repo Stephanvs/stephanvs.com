@@ -1,0 +1,119 @@
+---
+const cells = [
+  {
+    area: 'tl',
+    kicker: 'Latest · fixed',
+    title: 'Monorepo, not hermetic',
+    body: 'One global conflict domain. Test scope is a path guess or everything.',
+    note: 'Fails first',
+  },
+  {
+    area: 'tr',
+    kicker: 'Latest · computed',
+    title: 'Monorepo, hermetic',
+    body: 'Conflict domain and test scope computed per change. Every dependency at the latest commit.',
+    target: true,
+  },
+  {
+    area: 'bl',
+    kicker: 'Pinned · fixed',
+    title: 'Polyrepo',
+    body: 'Conflict domains fixed when someone creates the repositories. Version pins between them.',
+  },
+  {
+    area: 'br',
+    kicker: 'Pinned · computed',
+    title: 'Polyrepo with a dependency-graph service',
+    body: 'Consumer test scope computed outside Git. Conflict domains stay per repository, and breaks surface at the bump.',
+  },
+];
+---
+
+<figure class="not-prose my-12">
+  <div class="quadrants" role="img" aria-label="Two-axis chart. The horizontal axis runs from conflict domain and test scope fixed by hand to computed from the build graph. The vertical axis runs from pinned versions to latest commit. Top left: monorepo without a hermetic build. Top right: monorepo with a hermetic build. Bottom left: polyrepo. Bottom right: polyrepo with a dependency-graph service.">
+    <div class="y-axis font-mono text-[0.6875rem] uppercase tracking-widest text-quiet" aria-hidden="true">
+      <span>Pinned versions</span>
+      <span class="text-ink">Consistency</span>
+      <span>Latest commit</span>
+    </div>
+
+    <div class="grid-area" aria-hidden="true">
+      {cells.map((cell) => (
+        <div class:list={['cell', cell.area, { target: cell.target }]}>
+          <p class:list={['font-mono text-[0.6875rem] uppercase tracking-widest', cell.target ? 'text-accent' : 'text-faint']}>{cell.kicker}</p>
+          <p class="mt-2 font-serif text-xl leading-tight tracking-tight text-ink sm:text-2xl">{cell.title}</p>
+          <p class="mt-2 text-sm leading-snug text-muted">{cell.body}</p>
+          {cell.note && <p class="mt-3 font-mono text-[0.6875rem] uppercase tracking-widest text-ink">{cell.note}</p>}
+        </div>
+      ))}
+    </div>
+
+    <div class="x-axis font-mono text-[0.6875rem] uppercase tracking-widest text-quiet" aria-hidden="true">
+      <span>Fixed by hand</span>
+      <span class="text-ink">Conflict domain + test scope</span>
+      <span class="text-right">Computed from the graph</span>
+    </div>
+  </div>
+  <figcaption class="mt-4 text-sm text-faint">
+    Moving right takes a hermetic build graph. Moving up gives up version pins.
+  </figcaption>
+</figure>
+
+<style>
+  .quadrants {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: 1fr auto;
+    column-gap: 0.75rem;
+    row-gap: 0.75rem;
+  }
+
+  .y-axis {
+    display: flex;
+    justify-content: space-between;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+
+  .grid-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'tl tr'
+      'bl br';
+    border-left: 2px solid var(--site-line);
+    border-bottom: 2px solid var(--site-line);
+  }
+
+  .x-axis {
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0.75rem;
+  }
+
+  .cell {
+    padding: 1rem;
+    border-color: var(--site-line-soft);
+  }
+
+  .tl { grid-area: tl; border-right-width: 1px; border-bottom-width: 1px; }
+  .tr { grid-area: tr; border-bottom-width: 1px; }
+  .bl { grid-area: bl; border-right-width: 1px; }
+  .br { grid-area: br; }
+
+  .target {
+    background: var(--site-raised);
+    box-shadow: inset 3px 0 0 var(--site-accent);
+  }
+
+  @media (min-width: 640px) {
+    .cell { padding: 1.5rem; }
+  }
+
+  @media (max-width: 479px) {
+    .x-axis { grid-template-columns: 1fr 1fr; }
+    .x-axis > :nth-child(2) { display: none; }
+    .y-axis > :nth-child(2) { display: none; }
+  }
+</style>
