@@ -94,6 +94,14 @@ export const projects: readonly Project[] = [
     links: [{ label: 'Website', href: 'https://clacky.xyz' }]
   },
   {
+    name: 'Pacific Crossing',
+    kind: 'Interactive scene',
+    stack: 'JavaScript',
+    summary: 'Look out from seat 18A on a flight across the Pacific. Drag to look around and scroll to zoom.',
+    glyph: 'aircraft',
+    links: [{ label: 'Open scene', href: '/aircraft' }]
+  },
+  {
     name: 'Popcorn for TeamCity',
     kind: 'iOS app',
     stack: 'Swift',

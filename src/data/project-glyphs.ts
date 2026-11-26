@@ -51,6 +51,7 @@ export const projectGlyphs = {
   d2lang: '<rect x="4" y="4" width="20" height="14" rx="2"/><rect x="26" y="30" width="18" height="14" rx="2"/><path d="M14 18v19h10m-5-5 5 5-5 5"/>',
   // A keycap giving off sound.
   clack: '<rect x="2" y="14" width="28" height="30" rx="4"/><rect x="7" y="18" width="18" height="17" rx="2"/><path d="M34 22a6 6 0 0 1 0 12M39 17a13 13 0 0 1 0 22"/>',
+  aircraft: '<rect x="8" y="3" width="32" height="42" rx="15"/><rect x="13" y="8" width="22" height="32" rx="10"/><path d="m13 25 22-6m-17 5 10 5 7-2"/>',
   // A tub of popcorn.
   popcorn: '<path d="m10 21 4 25h20l4-25z"/><path d="m19 21 1.5 25M29 21l-1.5 25"/><path d="M10 21a6 6 0 0 1 5-10 9.5 9.5 0 0 1 18 0 6 6 0 0 1 5 10"/>'
 } as const;
