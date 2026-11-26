@@ -87,6 +87,13 @@ export const projects: readonly Project[] = [
     ]
   },
   {
+    name: 'Clack',
+    kind: 'Windows app',
+    summary: 'Mechanical keyboard sounds for any keyboard. A tray app that plays switch, typewriter, or mouse click sounds as you type.',
+    glyph: 'clack',
+    links: [{ label: 'Website', href: 'https://clacky.xyz' }]
+  },
+  {
     name: 'Popcorn for TeamCity',
     kind: 'iOS app',
     stack: 'Swift',
