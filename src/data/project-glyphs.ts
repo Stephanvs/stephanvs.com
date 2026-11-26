@@ -49,6 +49,8 @@ export const projectGlyphs = {
   hypr: '<circle cx="11" cy="8" r="4"/><circle cx="11" cy="40" r="4"/><circle cx="35" cy="13" r="4"/><path d="M11 12v24M35 17v3a9 9 0 0 1-9 9H11"/>',
   // Two diagram boxes joined by an arrow.
   d2lang: '<rect x="4" y="4" width="20" height="14" rx="2"/><rect x="26" y="30" width="18" height="14" rx="2"/><path d="M14 18v19h10m-5-5 5 5-5 5"/>',
+  // A keycap giving off sound.
+  clack: '<rect x="2" y="14" width="28" height="30" rx="4"/><rect x="7" y="18" width="18" height="17" rx="2"/><path d="M34 22a6 6 0 0 1 0 12M39 17a13 13 0 0 1 0 22"/>',
   // A tub of popcorn.
   popcorn: '<path d="m10 21 4 25h20l4-25z"/><path d="m19 21 1.5 25M29 21l-1.5 25"/><path d="M10 21a6 6 0 0 1 5-10 9.5 9.5 0 0 1 18 0 6 6 0 0 1 5 10"/>'
 } as const;
