@@ -1,0 +1,236 @@
+---
+import '../../styles/interactive.css';
+
+const presets = [
+  { value: 'friday', label: 'Friday night, unbounded' },
+  { value: 'drop-oldest', label: 'Bounded, DropOldest' },
+  { value: 'wait', label: 'Bounded, Wait' },
+  { value: 'healthy', label: 'Consumer keeps up' }
+];
+const fullModes = ['Wait', 'DropOldest', 'DropNewest', 'DropWrite'];
+const speeds = [1, 10, 30];
+---
+
+<figure class="lx not-prose" data-queue-sim>
+  <p class="lx-eyebrow">Interactive · Queue simulator</p>
+  <figcaption class="lx-title">What happens when the consumer falls behind</figcaption>
+  <p class="lx-lede">
+    This is a model, not a benchmark. Each item is 2 KB, the pod can spare 64 MB for the queue, and simulated time runs faster than real
+    time. Pick a scenario, then move the sliders while it runs.
+  </p>
+
+  <div class="sim-section">
+    <p class="lx-label">Scenario</p>
+    <div class="lx-seg" role="group" aria-label="Scenario">
+      {presets.map((preset, index) => (
+        <button type="button" class="lx-chip" value={preset.value} aria-pressed={index === 0 ? 'true' : 'false'} data-preset>
+          {preset.label}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <form class="lx-controls" data-form>
+    <label class="lx-field">
+      <span class="lx-field-head">
+        <span class="lx-label">Producer rate</span>
+        <output data-value="arrivalRate">500/s</output>
+      </span>
+      <input type="range" name="arrivalRate" min="50" max="1000" step="10" value="500" />
+    </label>
+    <label class="lx-field">
+      <span class="lx-field-head">
+        <span class="lx-label">Consumer rate</span>
+        <output data-value="drainRate">300/s</output>
+      </span>
+      <input type="range" name="drainRate" min="50" max="1000" step="10" value="300" />
+    </label>
+    <div class="lx-field">
+      <span class="lx-label" id="sim-mode-label">Channel</span>
+      <div class="lx-seg" role="group" aria-labelledby="sim-mode-label">
+        <button type="button" class="lx-chip" value="unbounded" aria-pressed="true" data-mode>Unbounded</button>
+        <button type="button" class="lx-chip" value="bounded" aria-pressed="false" data-mode>Bounded</button>
+      </div>
+    </div>
+    <label class="lx-field" data-bounded-only>
+      <span class="lx-field-head">
+        <span class="lx-label">Capacity</span>
+        <output data-value="capacity">1,000</output>
+      </span>
+      <input type="range" name="capacity" min="100" max="10000" step="100" value="1000" />
+    </label>
+    <div class="lx-field sim-full-mode" data-bounded-only>
+      <span class="lx-label" id="sim-full-mode-label">When full</span>
+      <div class="lx-seg" role="group" aria-labelledby="sim-full-mode-label">
+        {fullModes.map((mode) => (
+          <button type="button" class="lx-chip" value={mode} aria-pressed={mode === 'DropOldest' ? 'true' : 'false'} data-full-mode>
+            {mode}
+          </button>
+        ))}
+      </div>
+    </div>
+  </form>
+
+  <div class="sim-transport">
+    <button type="button" class="lx-button" data-variant="primary" data-play>Run</button>
+    <button type="button" class="lx-button" data-reset>Reset</button>
+    <div class="lx-seg" role="group" aria-label="Simulation speed">
+      {speeds.map((speed) => (
+        <button type="button" class="lx-chip" value={String(speed)} aria-pressed={speed === 10 ? 'true' : 'false'} data-speed>
+          {speed}×
+        </button>
+      ))}
+    </div>
+    <span class="sim-clock" data-clock>0:00 simulated</span>
+  </div>
+
+  <div class="lx-stats" data-columns="4">
+    <div class="lx-stat">
+      <span class="lx-stat-label">In the channel</span>
+      <span class="lx-stat-value" data-out="depth">0</span>
+      <span class="lx-stat-note" data-out="depth-note">items</span>
+    </div>
+    <div class="lx-stat">
+      <span class="lx-stat-label">Memory</span>
+      <span class="lx-stat-value" data-out="memory">0 B</span>
+      <span class="lx-stat-note" data-out="memory-note">limit 64 MB</span>
+    </div>
+    <div class="lx-stat">
+      <span class="lx-stat-label">Latency</span>
+      <span class="lx-stat-value" data-out="latency">–</span>
+      <span class="lx-stat-note">arrival to processing</span>
+    </div>
+    <div class="lx-stat">
+      <span class="lx-stat-label" data-out="loss-label">Lost in crashes</span>
+      <span class="lx-stat-value" data-out="loss">0</span>
+      <span class="lx-stat-note" data-out="loss-note">0 restarts</span>
+    </div>
+  </div>
+
+  <div class="sim-chart-head">
+    <p class="lx-label">Items queued, last 3 simulated minutes</p>
+    <div class="sim-legend" data-legend hidden>
+      <span class="lx-key" style="--lx-key-color: var(--lx-series-1)">In the channel</span>
+      <span class="lx-key" style="--lx-key-color: var(--lx-series-2)">Waiting upstream</span>
+    </div>
+  </div>
+  <div class="sim-chart" data-chart>
+    <div class="sim-tooltip" data-tooltip hidden></div>
+  </div>
+
+  <p class="lx-status" data-status aria-live="polite"></p>
+</figure>
+
+<style>
+  .sim-section {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+
+  .sim-full-mode {
+    grid-column: 1 / -1;
+  }
+
+  [data-bounded-only][data-disabled] {
+    opacity: 0.45;
+  }
+
+  .sim-transport {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-top: 1.25rem;
+    border-top: 1px solid var(--lx-grid);
+    padding-top: 1rem;
+  }
+
+  .sim-transport [data-play] {
+    min-width: 5rem;
+    justify-content: center;
+  }
+
+  .sim-clock {
+    margin-left: auto;
+    font-family: var(--lx-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--lx-ink-2);
+  }
+
+  .sim-chart-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .sim-legend:not([hidden]) {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .sim-chart {
+    position: relative;
+    margin-top: 0.5rem;
+    background: #fff;
+    border: 1px solid var(--lx-line);
+  }
+
+  .sim-chart :global(svg) {
+    display: block;
+    width: 100%;
+    touch-action: pan-y;
+  }
+
+  .sim-tooltip {
+    position: absolute;
+    top: 0.5rem;
+    z-index: 1;
+    display: grid;
+    gap: 0.15rem;
+    min-width: 9rem;
+    border: 1px solid var(--lx-line);
+    background: #fff;
+    padding: 0.5rem 0.625rem;
+    box-shadow: 0 4px 12px rgb(28 25 23 / 0.08);
+    font-size: 0.8rem;
+    pointer-events: none;
+  }
+
+  .sim-tooltip[hidden] {
+    display: none;
+  }
+
+  .sim-tooltip :global(.sim-tip-time) {
+    font-family: var(--lx-mono);
+    font-size: 0.7rem;
+    color: var(--lx-ink-2);
+  }
+
+  .sim-tooltip :global(.sim-tip-row) {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--lx-ink-2);
+  }
+
+  .sim-tooltip :global(.sim-tip-row strong) {
+    color: var(--lx-ink);
+    font-weight: 600;
+  }
+
+  .sim-tooltip :global(.sim-tip-key) {
+    display: inline-block;
+    width: 0.75rem;
+    height: 2px;
+    border-radius: 1px;
+  }
+</style>
+
+<script>
+  import '../../scripts/limits/queue-simulator';
+</script>
